@@ -1,13 +1,27 @@
-"""RoboDesk Pi5 orchestrator — Linked AI upgrade over MQTT + WebSocket audio."""
+"""RoboDesk Pi5 orchestrator — Linked AI upgrade over MQTT + WebSocket audio.
+
+Adds linked-mode content feeds for GC9A01:
+- weather forecast
+- AQI
+- RSS news
+- local calendar
+- desk time tracker
+- morning greeting
+- moon phase
+"""
 
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
 import json
 import logging
 import os
 import sqlite3
 import time
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import websockets
@@ -23,6 +37,11 @@ ROBOT_ID = os.getenv("ROBOT_ID", "deskbuddy-01")
 DATA_DIR = Path(os.getenv("DATA_DIR", "./data"))
 ASSETS_DIR = Path(os.getenv("ASSETS_DIR", "./assets"))
 MODEL_PROFILE = os.getenv("MODEL_PROFILE", "small")
+LATITUDE = os.getenv("LATITUDE", "11.106117")
+LONGITUDE = os.getenv("LONGITUDE", "106.630860")
+TIMEZONE = os.getenv("TIMEZONE", "Asia/Bangkok")
+NEWS_RSS_URL = os.getenv("NEWS_RSS_URL", "https://vnexpress.net/rss/tin-moi-nhat.rss")
+CALENDAR_FILE = Path(os.getenv("CALENDAR_FILE", str(DATA_DIR / "calendar.json")))
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
@@ -76,6 +95,17 @@ class TelemetryStore:
             return (time.time() - self._presence_start) / 60.0
         return 0.0
 
+    def today_minutes(self) -> float:
+        now = time.time()
+        start = dt.datetime.now().replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        cur = self.sitting_minutes()
+        row = self.conn.execute(
+            "SELECT COALESCE(SUM(end_ts - start_ts), 0) FROM presence_sessions WHERE end_ts >= ?",
+            (start,),
+        ).fetchone()
+        hist = float(row[0] or 0.0) / 60.0
+        return hist + cur
+
 
 class AIPipeline:
     """STT → LLM → TTS stubs sized for microSD 64GB (small profile)."""
@@ -116,6 +146,9 @@ class Orchestrator:
         self.store = TelemetryStore(DATA_DIR / "telemetry.db")
         self.ai = AIPipeline(MODEL_PROFILE)
         self.last_telemetry: dict = {}
+        self.screen_payload: dict = {}
+        self._last_presence = False
+        self._morning_greeted_date = ""
         self.mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="robodesk-orch")
         self.mqtt.on_connect = self._on_connect
         self.mqtt.on_message = self._on_message
@@ -138,6 +171,7 @@ class Orchestrator:
         if msg.topic.endswith("/telemetry"):
             self.last_telemetry = payload
             self.store.insert(payload)
+            self._maybe_greet_morning(bool(payload.get("presence")))
             # Comfort insight
             if payload.get("presence") and float(payload.get("temp_c") or 0) >= 30:
                 if self.store.sitting_minutes() > 45:
@@ -152,10 +186,191 @@ class Orchestrator:
     def publish_emote(self, mood: str):
         self.mqtt.publish(self._topic("emote"), json.dumps({"mood": mood}), qos=0)
 
+    def publish_screen(self, screen: str, hold_s: int = 15):
+        self.mqtt.publish(self._topic("emote"), json.dumps({"screen": screen, "hold_s": hold_s}), qos=0)
+
+    def publish_screen_data(self, payload: dict):
+        self.screen_payload = payload
+        self.mqtt.publish(self._topic("screen_data"), json.dumps(payload), qos=0)
+
+    def _maybe_greet_morning(self, presence: bool):
+        today = dt.date.today().isoformat()
+        now = dt.datetime.now()
+        if presence and not self._last_presence and 5 <= now.hour < 11 and self._morning_greeted_date != today:
+            self.publish_screen_data({**self.screen_payload, "morning_pending": True})
+            self.publish_emote("happy")
+            self.publish_screen("morning", 20)
+            self._morning_greeted_date = today
+        self._last_presence = presence
+
     def heartbeat_loop(self):
         while True:
             self.mqtt.publish(self._topic("heartbeat"), json.dumps({"ts": time.time()}), qos=0)
             time.sleep(2)
+
+    @staticmethod
+    def _fetch_json(url: str) -> dict:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+
+    @staticmethod
+    def _fetch_text(url: str) -> str:
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            return resp.read().decode("utf-8", errors="replace")
+
+    def _load_calendar(self) -> dict:
+        if not CALENDAR_FILE.exists():
+            CALENDAR_FILE.write_text(
+                json.dumps(
+                    [
+                        {"title": "Sprint review", "start": "2026-07-28T15:30:00+07:00"},
+                        {"title": "Deep work", "start": "2026-07-28T20:00:00+07:00"},
+                    ],
+                    indent=2,
+                ),
+                encoding="utf-8",
+            )
+        try:
+            items = json.loads(CALENDAR_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {"calendar_has": False, "calendar_title": "", "calendar_hh": 0, "calendar_mm": 0, "calendar_in_min": 0}
+        now = dt.datetime.now().astimezone()
+        best = None
+        for item in items:
+            try:
+                start = dt.datetime.fromisoformat(item["start"])
+            except Exception:
+                continue
+            if start >= now and (best is None or start < best[0]):
+                best = (start, str(item.get("title", "Event")))
+        if not best:
+            return {"calendar_has": False, "calendar_title": "", "calendar_hh": 0, "calendar_mm": 0, "calendar_in_min": 0}
+        start, title = best
+        return {
+            "calendar_has": True,
+            "calendar_title": title,
+            "calendar_hh": start.hour,
+            "calendar_mm": start.minute,
+            "calendar_in_min": max(0, int((start - now).total_seconds() // 60)),
+        }
+
+    def _fetch_news(self) -> dict:
+        try:
+            xml_text = self._fetch_text(NEWS_RSS_URL)
+            root = ET.fromstring(xml_text)
+            item = root.find(".//item/title")
+            title = item.text.strip() if item is not None and item.text else "No headline"
+        except Exception as e:
+            log.warning("news fetch failed: %s", e)
+            title = "No headline"
+        return {"news_title": title}
+
+    def _moon_payload(self) -> dict:
+        today = dt.date.today()
+        # simple synodic month approximation
+        ref = dt.date(2000, 1, 6)
+        age = ((today - ref).days % 29.53058867)
+        phase_pct = int((age / 29.53058867) * 100) % 100
+        illum = int((1 - abs(1 - 2 * (age / 29.53058867))) * 100)
+        if age < 1.8:
+            label = "New moon"
+        elif age < 7.4:
+            label = "Waxing crescent"
+        elif age < 9.2:
+            label = "First quarter"
+        elif age < 14.8:
+            label = "Waxing gibbous"
+        elif age < 16.6:
+            label = "Full moon"
+        elif age < 22.1:
+            label = "Waning gibbous"
+        elif age < 24.0:
+            label = "Last quarter"
+        else:
+            label = "Waning crescent"
+        return {"moon_phase_pct": phase_pct, "moon_illum_pct": illum, "moon_label": label}
+
+    def _fetch_weather(self) -> dict:
+        q = urllib.parse.urlencode(
+            {
+                "latitude": LATITUDE,
+                "longitude": LONGITUDE,
+                "current": "temperature_2m,weather_code",
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+                "timezone": TIMEZONE,
+            }
+        )
+        q_aqi = urllib.parse.urlencode(
+            {
+                "latitude": LATITUDE,
+                "longitude": LONGITUDE,
+                "current": "us_aqi,pm2_5",
+                "timezone": TIMEZONE,
+            }
+        )
+        payload: dict = {}
+        try:
+            w = self._fetch_json(f"https://api.open-meteo.com/v1/forecast?{q}")
+            cur = w.get("current", {})
+            daily = w.get("daily", {})
+            code = int(cur.get("weather_code", 0) or 0)
+            label = "Clear" if code == 0 else ("Rain" if code >= 60 else "Cloudy")
+            payload.update(
+                {
+                    "forecast_temp_c": float(cur.get("temperature_2m") or 0.0),
+                    "forecast_min_c": float((daily.get("temperature_2m_min") or [0])[0]),
+                    "forecast_max_c": float((daily.get("temperature_2m_max") or [0])[0]),
+                    "forecast_rain_pct": int((daily.get("precipitation_probability_max") or [0])[0] or 0),
+                    "forecast_weather_code": code,
+                    "forecast_label": label,
+                }
+            )
+        except Exception as e:
+            log.warning("weather fetch failed: %s", e)
+        try:
+            a = self._fetch_json(f"https://air-quality-api.open-meteo.com/v1/air-quality?{q_aqi}")
+            cur = a.get("current", {})
+            us = int(cur.get("us_aqi") or 0)
+            if us <= 50:
+                label = "GOOD"
+            elif us <= 100:
+                label = "MODERATE"
+            elif us <= 150:
+                label = "UNHEALTHY S"
+            else:
+                label = "UNHEALTHY"
+            payload.update({"aqi_us": us, "aqi_pm25": float(cur.get("pm2_5") or 0.0), "aqi_label": label})
+        except Exception as e:
+            log.warning("aqi fetch failed: %s", e)
+        return payload
+
+    def build_screen_payload(self) -> dict:
+        payload: dict = {}
+        payload.update(self._fetch_weather())
+        payload.update(self._fetch_news())
+        payload.update(self._load_calendar())
+        payload.update(self._moon_payload())
+        session_min = int(self.store.sitting_minutes())
+        today_min = int(self.store.today_minutes())
+        payload.update(
+            {
+                "desk_today_min": today_min,
+                "desk_session_min": session_min,
+                "desk_break_due": session_min >= 50,
+                "morning_pending": False,
+            }
+        )
+        t = payload.get("forecast_temp_c") or self.last_telemetry.get("temp_c") or 0
+        aqi = int(payload.get("aqi_us") or 0)
+        payload["morning_line1"] = "Good morning"
+        payload["morning_line2"] = f"{t:.0f}C AQI {aqi}" if aqi else f"{t:.0f}C Focus mode"
+        return payload
+
+    async def content_loop(self):
+        while True:
+            payload = await asyncio.to_thread(self.build_screen_payload)
+            self.publish_screen_data(payload)
+            await asyncio.sleep(300)
 
     def start_mqtt(self):
         self.mqtt.connect(MQTT_HOST, MQTT_PORT, 60)
@@ -205,7 +420,9 @@ class Orchestrator:
                     "ok": True,
                     "robot": ROBOT_ID,
                     "sitting_min": self.store.sitting_minutes(),
+                    "today_min": self.store.today_minutes(),
                     "telemetry": self.last_telemetry,
+                    "screens": self.screen_payload,
                     "sd_profile": MODEL_PROFILE,
                 }
             )
@@ -230,7 +447,11 @@ class Orchestrator:
             self.publish_cmd(body)
             return web.json_response({"ok": True})
 
+        async def screens(_):
+            return web.json_response(self.screen_payload)
+
         app.router.add_get("/health", health)
+        app.router.add_get("/api/screens", screens)
         app.router.add_get("/assets/{name}", assets)
         app.router.add_post("/api/say", say)
         app.router.add_post("/api/cmd", cmd)
@@ -240,6 +461,7 @@ class Orchestrator:
 async def main_async():
     orch = Orchestrator()
     orch.start_mqtt()
+    asyncio.create_task(orch.content_loop())
     app = orch.build_http()
     runner = web.AppRunner(app)
     await runner.setup()

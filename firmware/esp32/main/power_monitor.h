@@ -6,6 +6,7 @@ typedef struct {
     float pct;
     bool low;
     bool critical;
+    bool valid;
 } power_status_t;
 
 void power_monitor_init(void);

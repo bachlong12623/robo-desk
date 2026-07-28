@@ -12,11 +12,22 @@ docs/
   WIRING.md             # Breadboard bring-up
   PROTOCOL.md           # MQTT / WS / BLE
   BRINGUP_CHECKLIST.md  # Phase 0 rồi Phase 1
+  FACE_PIXEL.md         # Biểu cảm pixel GC9A01
 firmware/esp32/         # ESP-IDF project
 server/pi5/             # Docker Mosquitto + orchestrator
 ```
 
 **Kho phần cứng:** mục A (robot) + D (Pi 5) = có. Mục B (bảo vệ nguồn/cơ khí) và C (nice-to-have) = chưa có — mua B trước khi full-load / chạy mép bàn.
+
+### Xem biểu cảm (chưa cần ESP/màn)
+
+```bash
+python tools/preview_faces.py --html tools/faces.html     # 14 biểu cảm, có animation — mở trong browser
+python tools/preview_screens.py --html tools/screens.html # 13 màn hình (cảm biến + weather/AQI/news/calendar/desk/moon)
+python tools/preview_faces.py --mood happy                # xem nhanh trên terminal
+```
+
+Chi tiết: `docs/FACE_PIXEL.md`.
 ## Firmware (ESP32-S3)
 
 ```bash
@@ -37,6 +48,13 @@ curl http://localhost:8080/health
 ```
 
 MQTT `:1883`, HTTP `:8080`, audio WS `:8081`.
+
+Linked-mode feed mở rộng:
+- Weather forecast + AQI từ Open-Meteo
+- News từ RSS
+- Calendar từ `server/pi5/orchestrator/data/calendar.json`
+- Desk tracker từ presence telemetry
+- Morning greeting + moon phase
 
 On-device without Docker:
 

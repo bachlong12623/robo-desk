@@ -5,6 +5,7 @@
 #include "power_monitor.h"
 #include "behavior_brain.h"
 #include "face_ui.h"
+#include "screen_feed.h"
 #include "led_ring.h"
 #include "mqtt_client.h"
 #include "esp_wifi.h"
@@ -82,18 +83,44 @@ static void handle_emote(const char *json)
     }
     cJSON *mood = cJSON_GetObjectItem(root, "mood");
     if (cJSON_IsString(mood)) {
-        if (strcmp(mood->valuestring, "happy") == 0) {
-            face_ui_set_mood(FACE_HAPPY);
-            led_ring_set_mood(FACE_HAPPY);
-        } else if (strcmp(mood->valuestring, "think") == 0) {
-            face_ui_set_mood(FACE_THINK);
-            led_ring_set_mood(FACE_THINK);
-        } else if (strcmp(mood->valuestring, "alert") == 0) {
-            face_ui_set_mood(FACE_ALERT);
-            led_ring_set_mood(FACE_ALERT);
+        static const struct { const char *name; face_mood_t m; } MOODS[] = {
+            { "idle", FACE_IDLE },       { "happy", FACE_HAPPY },
+            { "sleepy", FACE_SLEEPY },   { "listen", FACE_LISTEN },
+            { "speak", FACE_SPEAK },     { "think", FACE_THINK },
+            { "alert", FACE_ALERT },     { "panic", FACE_PANIC },
+            { "sad", FACE_SAD },         { "angry", FACE_ANGRY },
+            { "love", FACE_LOVE },       { "excited", FACE_EXCITED },
+            { "dizzy", FACE_DIZZY },     { "plead", FACE_PLEAD },
+        };
+        for (unsigned i = 0; i < sizeof(MOODS) / sizeof(MOODS[0]); ++i) {
+            if (strcmp(mood->valuestring, MOODS[i].name) == 0) {
+                face_ui_show_face();
+                face_ui_set_mood(MOODS[i].m);
+                led_ring_set_mood(MOODS[i].m);
+                break;
+            }
+        }
+    }
+    /* {"screen":"climate","hold_s":10} — show an info screen */
+    cJSON *screen = cJSON_GetObjectItem(root, "screen");
+    if (cJSON_IsString(screen)) {
+        if (strcmp(screen->valuestring, "face") == 0) {
+            face_ui_show_face();
+        } else {
+            info_screen_t s = screen_info_by_name(screen->valuestring);
+            if (s < SCREEN_COUNT) {
+                cJSON *hold = cJSON_GetObjectItem(root, "hold_s");
+                uint32_t hold_s = cJSON_IsNumber(hold) ? (uint32_t)hold->valuedouble : 15;
+                face_ui_show_screen(s, hold_s);
+            }
         }
     }
     cJSON_Delete(root);
+}
+
+static void handle_screen_data(const char *json)
+{
+    screen_feed_update_json(json);
 }
 
 static void mqtt_event(void *arg, esp_event_base_t base, int32_t id, void *data)
@@ -110,6 +137,8 @@ static void mqtt_event(void *arg, esp_event_base_t base, int32_t id, void *data)
         snprintf(topic, sizeof(topic), "deskbuddy/%s/emote", ac->robot_id);
         esp_mqtt_client_subscribe(s_client, topic, 1);
         snprintf(topic, sizeof(topic), "deskbuddy/%s/heartbeat", ac->robot_id);
+        esp_mqtt_client_subscribe(s_client, topic, 0);
+        snprintf(topic, sizeof(topic), "deskbuddy/%s/screen_data", ac->robot_id);
         esp_mqtt_client_subscribe(s_client, topic, 0);
         esp_mqtt_client_subscribe(s_client, "deskbuddy/server/ready", 0);
         snprintf(topic, sizeof(topic), "deskbuddy/%s/hello", ac->robot_id);
@@ -130,6 +159,8 @@ static void mqtt_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             handle_cmd(p);
         } else if (strstr(t, "/emote")) {
             handle_emote(p);
+        } else if (strstr(t, "/screen_data")) {
+            handle_screen_data(p);
         }
         break;
     }

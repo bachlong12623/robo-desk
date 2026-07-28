@@ -7,6 +7,11 @@ idf_component_register(
         "sensors.c"
         "safety.c"
         "drive.c"
+        "display_gc9a01.c"
+        "face_draw.c"
+        "face_pixel.c"
+        "screen_info.c"
+        "screen_feed.c"
         "face_ui.c"
         "led_ring.c"
         "audio_path.c"
@@ -27,6 +32,7 @@ idf_component_register(
         bt
         driver
         esp_adc
+        esp_lcd
         esp_timer
         json
         mdns

@@ -1,0 +1,10 @@
+{
+  "pack": "face-basic",
+  "version": 1,
+  "files": [
+    "idle.bin",
+    "happy.bin",
+    "alert.bin"
+  ],
+  "note": "Place binary sprite packs here for ESP asset OTA"
+}

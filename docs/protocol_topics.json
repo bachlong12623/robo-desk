@@ -1,0 +1,21 @@
+{
+  "robot_id": "deskbuddy-01",
+  "mqtt": {
+    "hello": "deskbuddy/{id}/hello",
+    "telemetry": "deskbuddy/{id}/telemetry",
+    "event": "deskbuddy/{id}/event",
+    "mode": "deskbuddy/{id}/mode",
+    "heartbeat": "deskbuddy/{id}/heartbeat",
+    "cmd": "deskbuddy/{id}/cmd",
+    "emote": "deskbuddy/{id}/emote",
+    "asset": "deskbuddy/{id}/asset",
+    "server_ready": "deskbuddy/server/ready"
+  },
+  "websocket_audio": "ws://deskbuddy-ai.local:8081/audio/{id}",
+  "http": {
+    "health": "http://deskbuddy-ai.local:8080/health",
+    "assets": "http://deskbuddy-ai.local:8080/assets/{name}",
+    "say": "http://deskbuddy-ai.local:8080/api/say",
+    "cmd": "http://deskbuddy-ai.local:8080/api/cmd"
+  }
+}

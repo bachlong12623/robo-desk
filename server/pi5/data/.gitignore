@@ -1,0 +1,3 @@
+# Keep models + DB under quota on microSD 64GB
+*
+!.gitignore

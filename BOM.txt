@@ -1,0 +1,61 @@
+# RoboDesk — Bill of Materials
+# Trạng thái kho (2026-07-28): CHỈ CÓ MỤC A + D. Mục B và C = CHƯA CÓ (cần mua).
+
+## A. Robot — ĐANG CÓ
+
+# Qty = số lượng mục tiêu để ráp 2WD. Kiểm tra hộp thật:
+# nếu pin/motor/TCRT mới có 1 cái thì mua thêm cho đủ cột Qty trước khi làm B.
+
+ESP32-S3 Dev Kit N16R8                          x1    [CÓ]
+Pin Lithium 18650 (2000mAh)                     x2    [CÓ / đủ 2S]
+Đế pin 18650 đôi (2 Slot)                       x1    [CÓ]
+Mạch sạc Type-C 2S/3S (balance + bảo vệ)        x1    [CÓ]  # cấu hình 2S
+MP1584EN buck DC 3A (0.8–20V)                   x1    [CÓ]  # chỉnh 5.0V
+Micro kỹ thuật số INMP441 (I2S)                 x1    [CÓ]
+Mạch Amply MAX98357A (I2S)                      x1    [CÓ]
+Củ Loa 3W (khuyến nghị 4Ω)                      x1    [CÓ]
+Vòng đèn LED WS2812 (12 bóng)                   x1    [CÓ]
+Màn hình tròn 1.28" GC9A01 (SPI)                x1    [CÓ]
+Động cơ giảm tốc N20 (100–150 vòng/p)           x2    [CÓ]
+Mạch điều khiển Motor DRV8833                   x1    [CÓ]
+Bánh xe N20 + Gá bắt Motor                      x2    [CÓ]
+Bánh xe mắt trâu (đa hướng)                     x1    [CÓ]
+Cảm biến khoảng cách Laser VL53L0X              x1    [CÓ]
+Cảm biến Radar X-band Rd-04                     x1    [CÓ]
+Cảm biến góc nghiêng MPU6050                    x1    [CÓ]
+Cảm biến Nhiệt độ/Độ ẩm DHT20                   x1    [CÓ]
+Cảm biến hồng ngoại TCRT5000                    x2    [CÓ]
+Testboard (Breadboard 830 lỗ)                   x1    [CÓ]
+Bộ dây cắm DuPont (Đực-Cái, Đ-Đ)                x1    [CÓ]
+
+## B. Bắt buộc bổ sung — CHƯA CÓ (ưu tiên mua)
+
+Công tắc nguồn chính                            x1    [CHƯA CÓ]
+Cầu chì / polyfuse 2–3A                         x1    [CHƯA CÓ]
+Tụ điện phân cực 470–1000µF / 10V               x2    [CHƯA CÓ]
+Tụ ceramic 100nF                                x10   [CHƯA CÓ]
+Điện trở chia áp 100k + 33k                     x1 bộ [CHƯA CÓ]  # đo 2S → ADC
+Level shifter 1 kênh (hoặc 74AHCT125)           x1    [CHƯA CÓ]  # WS2812 DATA
+LDO/Buck 3.3V 1A (AMS1117-3.3 hoặc MP1584 #2)   x1    [CHƯA CÓ]
+Ốc M2/M3 + trụ nhựa                             x1 bộ [CHƯA CÓ]
+Trục / bạc đạn bánh mắt trâu                    x1 bộ [CHƯA CÓ]
+
+## C. Nên có — CHƯA CÓ (mua sau khi B xong)
+
+Schottky / ideal diode (power-path)             x1    [CHƯA CÓ]
+INA219 (I2C current sense)                      x1    [CHƯA CÓ]
+Nút tactile                                     x2    [CHƯA CÓ]
+LED báo nguồn + điện trở 220Ω                   x1    [CHƯA CÓ]
+Dây JST-XH/PH + crimp                           x1 bộ [CHƯA CÓ]
+Bọt cách âm mic                                 x1    [CHƯA CÓ]
+Heatshrink / zip tie / keo nóng                 x1 bộ [CHƯA CÓ]
+
+## D. Raspberry Pi 5 — ĐANG CÓ
+
+Raspberry Pi 5 (4/8GB)                          x1    [CÓ]
+Nguồn Pi 5 27W                                  x1    [CÓ]
+microSD 64GB (đang dùng)                        x1    [CÓ]
+Case + active cooler                            x1    [CÓ]
+LAN Ethernet hoặc WiFi 24/7                     x1    [CÓ]
+NVMe SSD + HAT (optional)                       x0→1  [CHƯA CÓ / không cần phase 1]
+Pi Camera v3 (optional, phase 2)                x0→1  [CHƯA CÓ / không cần phase 1]

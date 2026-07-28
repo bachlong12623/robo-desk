@@ -1,0 +1,33 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "app_config.c"
+        "mode_manager.c"
+        "power_monitor.c"
+        "sensors.c"
+        "safety.c"
+        "drive.c"
+        "face_ui.c"
+        "led_ring.c"
+        "audio_path.c"
+        "voice_solo.c"
+        "behavior_brain.c"
+        "net_mqtt.c"
+        "net_ws_audio.c"
+        "ble_remote.c"
+        "asset_ota.c"
+    INCLUDE_DIRS "."
+    REQUIRES
+        nvs_flash
+        esp_wifi
+        esp_event
+        esp_netif
+        esp_http_client
+        mqtt
+        bt
+        driver
+        esp_adc
+        esp_timer
+        json
+        mdns
+)

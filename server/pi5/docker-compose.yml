@@ -1,0 +1,33 @@
+# RoboDesk Pi 5 AI server (microSD 64GB friendly)
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  orchestrator:
+    build: ./orchestrator
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      ROBOT_ID: deskbuddy-01
+      MODEL_PROFILE: small   # small | medium — keep small on 64GB SD
+      DATA_DIR: /data
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - ./data:/data
+      - ./assets:/assets:ro
+
+  # Optional: run Ollama on host instead of container for ARM performance
+  # ollama:
+  #   image: ollama/ollama
+  #   ...

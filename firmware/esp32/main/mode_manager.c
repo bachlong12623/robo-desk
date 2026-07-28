@@ -7,6 +7,8 @@
 static const char *TAG = "mode";
 static robodesk_mode_t s_mode = ROBODESK_MODE_SOLO;
 static int64_t s_last_hb_us;
+static bool s_low_power;
+static bool s_muted;
 
 void mode_manager_on_pi_heartbeat(void)
 {
@@ -22,9 +24,35 @@ void mode_manager_force_solo(void)
     s_mode = ROBODESK_MODE_SOLO;
 }
 
+void mode_manager_set_low_power(bool on)
+{
+    s_low_power = on;
+}
+
+void mode_manager_set_muted(bool on)
+{
+    s_muted = on;
+}
+
 robodesk_mode_t mode_manager_get(void)
 {
     return s_mode;
+}
+
+robodesk_lifecycle_t mode_manager_lifecycle_get(void)
+{
+    if (s_low_power) {
+        return ROBODESK_LIFE_LOW_POWER;
+    }
+    if (s_muted) {
+        return ROBODESK_LIFE_MUTED;
+    }
+    if (s_mode == ROBODESK_MODE_LINKED) {
+        return ((esp_timer_get_time() - s_last_hb_us) > 3000000LL)
+            ? ROBODESK_LIFE_LINKED_STALE
+            : ROBODESK_LIFE_LINKED;
+    }
+    return ROBODESK_LIFE_SOLO;
 }
 
 static void mode_task(void *arg)

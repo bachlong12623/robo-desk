@@ -32,6 +32,7 @@ Set qua `face_ui_set_mood()` — cùng hook với LED ring (`behavior_brain`,
 - `display_gc9a01.c` — SPI + GC9A01 driver, PSRAM framebuffer
 - `face_pixel.c` — renderer (C) — **giữ đồng bộ với `tools/preview_faces.py`**
 - `face_ui.c` — render loop ~12 fps
+- `face_ui.c` — command/priority state machine nhỏ cho mood/screen timeout
 - `tools/preview_faces.py` — renderer Python y hệt, để xem trước không cần phần cứng
 
 ## Xem trước (chưa cần ESP/màn)
@@ -121,6 +122,10 @@ Pi 5 publish topic `deskbuddy/<id>/screen_data` với các field như:
 - `desk_today_min`, `desk_session_min`, `desk_break_due`
 - `morning_line1`, `morning_line2`
 - `moon_phase_pct`, `moon_illum_pct`, `moon_label`
+- `version`, `ts` để ESP phát hiện feed cũ/stale
+
+Firmware local sensor snapshot cũng đã có cờ validity/staleness cho `climate`, `imu`, `tof`,
+để các màn `climate/level/radar` và safety không tiêu thụ dữ liệu giả khi cảm biến mất ACK.
 
 Biến môi trường Pi 5 quan trọng:
 

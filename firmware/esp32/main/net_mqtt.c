@@ -24,6 +24,9 @@ static const char *TAG = "mqtt";
 static EventGroupHandle_t s_wifi_eg;
 static esp_mqtt_client_handle_t s_client;
 #define WIFI_OK BIT0
+#define WIFI_FAIL BIT1
+
+static int s_wifi_retry;
 
 static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
@@ -32,8 +35,13 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
     if (base == WIFI_EVENT && id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (base == WIFI_EVENT && id == WIFI_EVENT_STA_DISCONNECTED) {
+        xEventGroupClearBits(s_wifi_eg, WIFI_OK);
+        xEventGroupSetBits(s_wifi_eg, WIFI_FAIL);
+        s_wifi_retry++;
+        ESP_LOGW(TAG, "WiFi disconnected, retry=%d", s_wifi_retry);
         esp_wifi_connect();
     } else if (base == IP_EVENT && id == IP_EVENT_STA_GOT_IP) {
+        s_wifi_retry = 0;
         xEventGroupSetBits(s_wifi_eg, WIFI_OK);
     }
 }
@@ -67,10 +75,12 @@ static void handle_cmd(const char *json)
     }
     cJSON *goal = cJSON_GetObjectItem(root, "goal");
     cJSON *type = cJSON_GetObjectItem(root, "type");
+    cJSON *ttl = cJSON_GetObjectItem(root, "ttl_ms");
     if (cJSON_IsString(goal)) {
-        behavior_brain_on_goal(goal->valuestring);
+        uint32_t ttl_ms = cJSON_IsNumber(ttl) ? (uint32_t)ttl->valuedouble : 30000;
+        behavior_brain_on_goal_ttl(goal->valuestring, ttl_ms);
     } else if (cJSON_IsString(type) && strcmp(type->valuestring, "stop") == 0) {
-        behavior_brain_on_goal("stop");
+        behavior_brain_on_goal_ttl("stop", 0);
     }
     cJSON_Delete(root);
 }
@@ -95,7 +105,7 @@ static void handle_emote(const char *json)
         for (unsigned i = 0; i < sizeof(MOODS) / sizeof(MOODS[0]); ++i) {
             if (strcmp(mood->valuestring, MOODS[i].name) == 0) {
                 face_ui_show_face();
-                face_ui_set_mood(MOODS[i].m);
+                face_ui_set_mood_prio(MOODS[i].m, FACE_UI_PRIO_REMOTE, 10);
                 led_ring_set_mood(MOODS[i].m);
                 break;
             }
@@ -111,7 +121,7 @@ static void handle_emote(const char *json)
             if (s < SCREEN_COUNT) {
                 cJSON *hold = cJSON_GetObjectItem(root, "hold_s");
                 uint32_t hold_s = cJSON_IsNumber(hold) ? (uint32_t)hold->valuedouble : 15;
-                face_ui_show_screen(s, hold_s);
+                face_ui_show_screen_prio(s, hold_s, FACE_UI_PRIO_REMOTE);
             }
         }
     }
@@ -146,13 +156,21 @@ static void mqtt_event(void *arg, esp_event_base_t base, int32_t id, void *data)
                                 "{\"fw\":\"robodesk\",\"caps\":[\"drive\",\"face\",\"voice_solo\",\"audio\"]}", 0, 1, 0);
         ESP_LOGI(TAG, "MQTT connected");
         break;
+    case MQTT_EVENT_DISCONNECTED:
+        ESP_LOGW(TAG, "MQTT disconnected");
+        break;
     case MQTT_EVENT_DATA: {
-        char t[128] = { 0 };
-        char p[512] = { 0 };
-        int tl = ev->topic_len < 127 ? ev->topic_len : 127;
-        int pl = ev->data_len < 511 ? ev->data_len : 511;
-        memcpy(t, ev->topic, tl);
-        memcpy(p, ev->data, pl);
+        int tl = ev->topic_len < 255 ? ev->topic_len : 255;
+        int pl = ev->data_len < 2047 ? ev->data_len : 2047;
+        char *t = calloc((size_t)tl + 1, 1);
+        char *p = calloc((size_t)pl + 1, 1);
+        if (!t || !p) {
+            free(t);
+            free(p);
+            break;
+        }
+        memcpy(t, ev->topic, (size_t)tl);
+        memcpy(p, ev->data, (size_t)pl);
         if (strstr(t, "/heartbeat") || strstr(t, "server/ready")) {
             mode_manager_on_pi_heartbeat();
         } else if (strstr(t, "/cmd")) {
@@ -162,6 +180,8 @@ static void mqtt_event(void *arg, esp_event_base_t base, int32_t id, void *data)
         } else if (strstr(t, "/screen_data")) {
             handle_screen_data(p);
         }
+        free(t);
+        free(p);
         break;
     }
     default:
@@ -175,6 +195,9 @@ void net_mqtt_start(void)
     const app_config_t *ac = app_config_get();
     esp_mqtt_client_config_t cfg = {
         .broker.address.uri = ac->mqtt_uri,
+        .network.reconnect_timeout_ms = 5000,
+        .buffer.size = 4096,
+        .buffer.out_size = 2048,
     };
     s_client = esp_mqtt_client_init(&cfg);
     esp_mqtt_client_register_event(s_client, ESP_EVENT_ANY_ID, mqtt_event, NULL);
@@ -196,6 +219,10 @@ void net_mqtt_publish_telemetry(void)
     cJSON_AddNumberToObject(root, "temp_c", s->temp_c);
     cJSON_AddNumberToObject(root, "rh", s->rh);
     cJSON_AddNumberToObject(root, "tof_mm", s->tof_mm);
+    cJSON_AddBoolToObject(root, "climate_valid", s->climate_valid && !s->climate_stale);
+    cJSON_AddBoolToObject(root, "tof_valid", s->tof_valid && !s->tof_stale);
+    cJSON_AddBoolToObject(root, "imu_valid", s->imu_valid && !s->imu_stale);
+    cJSON_AddBoolToObject(root, "power_valid", p->valid);
     cJSON_AddBoolToObject(root, "presence", s->presence);
     cJSON_AddBoolToObject(root, "cliff_l", s->cliff_l);
     cJSON_AddBoolToObject(root, "cliff_r", s->cliff_r);

@@ -25,18 +25,24 @@ typedef enum {
 typedef struct {
     float temp_c;
     float rh;
+    bool climate_valid;
     float batt_v;
     float batt_pct;
     bool batt_low;
+    bool batt_valid;
     float pitch_deg;
     float roll_deg;
+    bool imu_valid;
     uint16_t tof_mm;
+    bool tof_valid;
     bool presence;
     int hh, mm, ss;
     int day, mon, dow;    /* dow: 0=Sun */
     bool linked;
     int rssi;             /* dBm, 0 = unknown */
     uint32_t uptime_s;
+    bool feed_fresh;
+    uint32_t feed_age_s;
 
     float forecast_temp_c;
     float forecast_min_c;

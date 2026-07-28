@@ -53,7 +53,10 @@ void audio_path_speak_text_stub(const char *text)
 
 int audio_path_read_mic(int16_t *dst, size_t samples)
 {
-    if (!dst || !s_rx) {
+    if (!dst) {
+        return 0;
+    }
+    if (!s_rx) {
         memset(dst, 0, samples * sizeof(int16_t));
         return 0;
     }

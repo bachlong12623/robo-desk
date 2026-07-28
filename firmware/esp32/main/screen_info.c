@@ -155,6 +155,11 @@ static void render_climate(const screen_info_data_t *d, uint32_t f)
 {
     (void)f;
     screen_bg("CLIMATE");
+    if (!d->climate_valid) {
+        fd_text_center(98, "--.-", 5, C_LABEL);
+        fd_text_center(150, "SENSOR OFFLINE", 2, C_WARN);
+        return;
+    }
     float ga0 = DEG(135);
     float frac = d->temp_c / 40.f;
     if (frac < 0.f) frac = 0.f;
@@ -196,6 +201,12 @@ static void render_climate(const screen_info_data_t *d, uint32_t f)
 static void render_battery(const screen_info_data_t *d, uint32_t f)
 {
     fd_fill_screen(C_BG);
+    if (!d->batt_valid) {
+        fd_text_center(34, "BATTERY", 2, C_LABEL);
+        fd_text_center(98, "--", 6, C_LABEL);
+        fd_text_center(156, "ADC OFFLINE", 2, C_WARN);
+        return;
+    }
     float ga0 = DEG(135);
     fd_ring_arc(FD_CX, FD_CY, 96, 112, ga0, ga0 + DEG(270), C_RING_BG, C_RING_BG);
     uint32_t col = d->batt_pct > 40.f ? C_GOOD : (d->batt_pct > 15.f ? C_WARN : C_BAD);
@@ -217,6 +228,11 @@ static void render_level(const screen_info_data_t *d, uint32_t f)
 {
     (void)f;
     screen_bg("LEVEL");
+    if (!d->imu_valid) {
+        fd_text_center(100, "IMU", 5, C_LABEL);
+        fd_text_center(160, "OFFLINE", 3, C_WARN);
+        return;
+    }
     int cy = 118;
     fd_circle_outline(FD_CX, cy, 22, 1.6f, C_RING_BG);
     fd_circle_outline(FD_CX, cy, 46, 1.6f, C_RING_BG);
@@ -257,7 +273,7 @@ static void render_radar(const screen_info_data_t *d, uint32_t f)
     }
     fd_thick_line(FD_CX, cy, FD_CX + R * cosf(rot), cy + R * sinf(rot),
                   2.f, 0xAAFFC8);
-    float dn = d->tof_mm / 1200.f;
+    float dn = d->tof_valid ? (d->tof_mm / 1200.f) : 1.f;
     if (dn > 1.f) dn = 1.f;
     float br = 10 + dn * (R - 14);
     float ba = DEG(-55);
@@ -265,7 +281,11 @@ static void render_radar(const screen_info_data_t *d, uint32_t f)
     fd_fill_ellipse(FD_CX + br * cosf(ba), cy + br * sinf(ba),
                     3.2f * pul, 3.2f * pul, 0xFF785A);
     char s[12];
-    snprintf(s, sizeof(s), "%u CM", (unsigned)(d->tof_mm / 10));
+    if (d->tof_valid) {
+        snprintf(s, sizeof(s), "%u CM", (unsigned)(d->tof_mm / 10));
+    } else {
+        snprintf(s, sizeof(s), "-- CM");
+    }
     fd_text_center(186, s, 3, C_TEXT);
     if (d->presence && (f / 5) % 2 == 0) {
         fd_text_center(214, "MOTION", 2, C_BAD);
@@ -310,8 +330,10 @@ static void render_status(const screen_info_data_t *d, uint32_t f)
     char s[16];
     snprintf(s, sizeof(s), "%d", d->rssi);
     fd_text(wx + 32, wy - 10, s, 2, C_TEXT);
-    fd_text_center(162, d->linked ? "MQTT OK" : "MQTT --", 2,
-                   d->linked ? C_GOOD : C_LABEL);
+    fd_text_center(162,
+                   d->linked ? (d->feed_fresh ? "MQTT OK" : "LINK STALE") : "MQTT --",
+                   2,
+                   d->linked ? (d->feed_fresh ? C_GOOD : C_WARN) : C_LABEL);
     unsigned up_min = d->uptime_s / 60;
     snprintf(s, sizeof(s), "UP %02u:%02u", up_min / 60, up_min % 60);
     fd_text_center(190, s, 2, C_LABEL);

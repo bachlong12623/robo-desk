@@ -18,8 +18,8 @@ void safety_update(void)
     s_st.cliff = s->cliff_l || s->cliff_r;
     s_st.tip = s->tipped || s->shock;
     s_st.batt_critical = p->critical;
-    s_st.tof_emergency = s->tof_mm > 0 && s->tof_mm < 40;
-    s_st.halt_motors = s_st.cliff || s_st.tip || s_st.batt_critical;
+    s_st.tof_emergency = s->tof_valid && !s->tof_stale && s->tof_mm > 0 && s->tof_mm < 40;
+    s_st.halt_motors = s_st.cliff || s_st.tip || s_st.batt_critical || s_st.tof_emergency;
     if (s_st.halt_motors) {
         ESP_LOGW(TAG, "HALT cliff=%d tip=%d batt=%d tof=%d",
                  s_st.cliff, s_st.tip, s_st.batt_critical, s_st.tof_emergency);

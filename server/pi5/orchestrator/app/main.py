@@ -42,6 +42,8 @@ LONGITUDE = os.getenv("LONGITUDE", "106.630860")
 TIMEZONE = os.getenv("TIMEZONE", "Asia/Bangkok")
 NEWS_RSS_URL = os.getenv("NEWS_RSS_URL", "https://vnexpress.net/rss/tin-moi-nhat.rss")
 CALENDAR_FILE = Path(os.getenv("CALENDAR_FILE", str(DATA_DIR / "calendar.json")))
+SCREEN_SCHEMA_VERSION = 2
+SCREEN_STALE_S = 900
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 ASSETS_DIR.mkdir(parents=True, exist_ok=True)
@@ -147,11 +149,14 @@ class Orchestrator:
         self.ai = AIPipeline(MODEL_PROFILE)
         self.last_telemetry: dict = {}
         self.screen_payload: dict = {}
+        self._screen_version = 0
+        self._cache: dict[str, dict] = {}
         self._last_presence = False
         self._morning_greeted_date = ""
         self.mqtt = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="robodesk-orch")
         self.mqtt.on_connect = self._on_connect
         self.mqtt.on_message = self._on_message
+        self.mqtt.reconnect_delay_set(min_delay=1, max_delay=30)
 
     def _topic(self, leaf: str) -> str:
         return f"deskbuddy/{ROBOT_ID}/{leaf}"
@@ -190,8 +195,12 @@ class Orchestrator:
         self.mqtt.publish(self._topic("emote"), json.dumps({"screen": screen, "hold_s": hold_s}), qos=0)
 
     def publish_screen_data(self, payload: dict):
+        self._screen_version += 1
+        payload = self._sanitize_screen_payload(payload)
+        payload["ts"] = time.time()
+        payload["version"] = self._screen_version
         self.screen_payload = payload
-        self.mqtt.publish(self._topic("screen_data"), json.dumps(payload), qos=0)
+        self.mqtt.publish(self._topic("screen_data"), json.dumps(payload, ensure_ascii=True), qos=0)
 
     def _maybe_greet_morning(self, presence: bool):
         today = dt.date.today().isoformat()
@@ -210,13 +219,62 @@ class Orchestrator:
 
     @staticmethod
     def _fetch_json(url: str) -> dict:
-        with urllib.request.urlopen(url, timeout=10) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        last_exc = None
+        for delay in (0, 1, 2):
+            if delay:
+                time.sleep(delay)
+            try:
+                with urllib.request.urlopen(url, timeout=10) as resp:
+                    return json.loads(resp.read().decode("utf-8"))
+            except Exception as exc:
+                last_exc = exc
+        raise last_exc
 
     @staticmethod
     def _fetch_text(url: str) -> str:
-        with urllib.request.urlopen(url, timeout=10) as resp:
-            return resp.read().decode("utf-8", errors="replace")
+        last_exc = None
+        for delay in (0, 1, 2):
+            if delay:
+                time.sleep(delay)
+            try:
+                with urllib.request.urlopen(url, timeout=10) as resp:
+                    return resp.read().decode("utf-8", errors="replace")
+            except Exception as exc:
+                last_exc = exc
+        raise last_exc
+
+    @staticmethod
+    def _clip(text: str, limit: int) -> str:
+        text = " ".join((text or "").split())
+        return text[:limit]
+
+    def _cache_get(self, key: str, fresh_for_s: int = SCREEN_STALE_S) -> dict:
+        item = self._cache.get(key) or {}
+        ts = float(item.get("_ts", 0) or 0)
+        if ts and (time.time() - ts) <= fresh_for_s:
+            return {k: v for k, v in item.items() if k != "_ts"}
+        return {}
+
+    def _cache_put(self, key: str, payload: dict) -> dict:
+        clean = dict(payload)
+        clean["_ts"] = time.time()
+        self._cache[key] = clean
+        return payload
+
+    def _sanitize_screen_payload(self, payload: dict) -> dict:
+        out = dict(payload)
+        for key, limit in {
+            "forecast_label": 23,
+            "aqi_label": 15,
+            "news_title": 95,
+            "calendar_title": 63,
+            "morning_line1": 47,
+            "morning_line2": 47,
+            "moon_label": 23,
+        }.items():
+            if key in out:
+                out[key] = self._clip(str(out.get(key, "")), limit)
+        return out
 
     def _load_calendar(self) -> dict:
         if not CALENDAR_FILE.exists():
@@ -233,7 +291,9 @@ class Orchestrator:
         try:
             items = json.loads(CALENDAR_FILE.read_text(encoding="utf-8"))
         except Exception:
-            return {"calendar_has": False, "calendar_title": "", "calendar_hh": 0, "calendar_mm": 0, "calendar_in_min": 0}
+            return self._cache_get("calendar") or {
+                "calendar_has": False, "calendar_title": "", "calendar_hh": 0, "calendar_mm": 0, "calendar_in_min": 0
+            }
         now = dt.datetime.now().astimezone()
         best = None
         for item in items:
@@ -244,15 +304,17 @@ class Orchestrator:
             if start >= now and (best is None or start < best[0]):
                 best = (start, str(item.get("title", "Event")))
         if not best:
-            return {"calendar_has": False, "calendar_title": "", "calendar_hh": 0, "calendar_mm": 0, "calendar_in_min": 0}
+            return self._cache_put("calendar", {
+                "calendar_has": False, "calendar_title": "", "calendar_hh": 0, "calendar_mm": 0, "calendar_in_min": 0
+            })
         start, title = best
-        return {
+        return self._cache_put("calendar", {
             "calendar_has": True,
-            "calendar_title": title,
+            "calendar_title": self._clip(title, 63),
             "calendar_hh": start.hour,
             "calendar_mm": start.minute,
             "calendar_in_min": max(0, int((start - now).total_seconds() // 60)),
-        }
+        })
 
     def _fetch_news(self) -> dict:
         try:
@@ -262,8 +324,11 @@ class Orchestrator:
             title = item.text.strip() if item is not None and item.text else "No headline"
         except Exception as e:
             log.warning("news fetch failed: %s", e)
+            cached = self._cache_get("news")
+            if cached:
+                return cached
             title = "No headline"
-        return {"news_title": title}
+        return self._cache_put("news", {"news_title": self._clip(title, 95)})
 
     def _moon_payload(self) -> dict:
         today = dt.date.today()
@@ -327,6 +392,7 @@ class Orchestrator:
             )
         except Exception as e:
             log.warning("weather fetch failed: %s", e)
+            payload.update(self._cache_get("weather"))
         try:
             a = self._fetch_json(f"https://air-quality-api.open-meteo.com/v1/air-quality?{q_aqi}")
             cur = a.get("current", {})
@@ -342,6 +408,11 @@ class Orchestrator:
             payload.update({"aqi_us": us, "aqi_pm25": float(cur.get("pm2_5") or 0.0), "aqi_label": label})
         except Exception as e:
             log.warning("aqi fetch failed: %s", e)
+            payload.update(self._cache_get("aqi"))
+        if any(k.startswith("forecast_") for k in payload):
+            self._cache_put("weather", {k: v for k, v in payload.items() if k.startswith("forecast_")})
+        if "aqi_us" in payload:
+            self._cache_put("aqi", {k: v for k, v in payload.items() if k.startswith("aqi_")})
         return payload
 
     def build_screen_payload(self) -> dict:
@@ -364,7 +435,7 @@ class Orchestrator:
         aqi = int(payload.get("aqi_us") or 0)
         payload["morning_line1"] = "Good morning"
         payload["morning_line2"] = f"{t:.0f}C AQI {aqi}" if aqi else f"{t:.0f}C Focus mode"
-        return payload
+        return self._sanitize_screen_payload(payload)
 
     async def content_loop(self):
         while True:
@@ -423,6 +494,7 @@ class Orchestrator:
                     "today_min": self.store.today_minutes(),
                     "telemetry": self.last_telemetry,
                     "screens": self.screen_payload,
+                    "screen_feed_fresh": (time.time() - float(self.screen_payload.get("ts", 0) or 0)) < SCREEN_STALE_S,
                     "sd_profile": MODEL_PROFILE,
                 }
             )

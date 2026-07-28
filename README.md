@@ -39,6 +39,11 @@ idf.py build flash monitor
 
 Requires ESP-IDF ≥ 5.1, PSRAM octal (N16R8).
 
+Bring-up hardening đã thêm:
+- `DHT20`, `MPU6050`, `VL53L0X` có đường đọc thật mức cơ bản; snapshot local có cờ `valid/stale`
+- `face_ui` dùng command/priority nội bộ để `panic/alert` local thắng remote emote/screen
+- `screen_data` có `version` + `ts`, Pi giữ `last-good` cache cho weather/news/calendar/AQI
+
 ## Pi 5 server
 
 ```bash
@@ -66,6 +71,13 @@ MQTT_HOST=127.0.0.1 python -m app.main
 ```
 
 Run Mosquitto locally and point ESP `mqtt_uri` to `mqtt://<pi-ip>`.
+
+## Verification
+
+```bash
+python -m unittest tools.tests.test_previews
+python -m unittest server.pi5.orchestrator.tests.test_main
+```
 
 ## Safety
 

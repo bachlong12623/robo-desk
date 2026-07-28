@@ -1,13 +1,10 @@
 # RoboDesk — Bill of Materials
-# Trạng thái kho (2026-07-28): CHỈ CÓ MỤC A + D. Mục B và C = CHƯA CÓ (cần mua).
+# Trạng thái kho: A + D ĐANG CÓ (số lượng đã đủ). B + C = CHƯA CÓ (cần mua).
 
-## A. Robot — ĐANG CÓ
-
-# Qty = số lượng mục tiêu để ráp 2WD. Kiểm tra hộp thật:
-# nếu pin/motor/TCRT mới có 1 cái thì mua thêm cho đủ cột Qty trước khi làm B.
+## A. Robot — ĐANG CÓ (qty đã xác nhận đủ cho 2WD)
 
 ESP32-S3 Dev Kit N16R8                          x1    [CÓ]
-Pin Lithium 18650 (2000mAh)                     x2    [CÓ / đủ 2S]
+Pin Lithium 18650 (2000mAh)                     x2    [CÓ]
 Đế pin 18650 đôi (2 Slot)                       x1    [CÓ]
 Mạch sạc Type-C 2S/3S (balance + bảo vệ)        x1    [CÓ]  # cấu hình 2S
 MP1584EN buck DC 3A (0.8–20V)                   x1    [CÓ]  # chỉnh 5.0V

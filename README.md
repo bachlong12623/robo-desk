@@ -14,7 +14,9 @@ Danh sách đầy đủ: **`BOM.txt`** — 5 khối chính (não, nguồn 2S, ng
 | 4. Truyền động | N20 300RPM ×2, DRV8833, bánh xe + omni |
 | 5. Cảm biến | TCRT5000 ×2, VL53L0X, Rd-04, MPU6050, DHT20 |
 
-**Bắt đầu đấu dây:** đọc [`docs/WIRING.md`](docs/WIRING.md) — hướng dẫn chi tiết cho người mới, có sơ đồ.
+**Bắt đầu đấu dây:**
+- [`docs/WIRING.md`](docs/WIRING.md) — thứ tự lắp, an toàn
+- [`docs/WIRING_PINS.md`](docs/WIRING_PINS.md) — **chân nào cắm cổng nào** (chi tiết từng module)
 
 ## Cấu trúc repo
 
@@ -22,6 +24,7 @@ Danh sách đầy đủ: **`BOM.txt`** — 5 khối chính (não, nguồn 2S, ng
 BOM.txt                     # Danh sách linh kiện
 docs/
   WIRING.md                 # ★ Hướng dẫn đấu dây (người mới)
+  WIRING_PINS.md            # ★★ Bảng chân từng module ↔ ESP32 (chi tiết cổng IO)
   PINMAP.md                 # Bảng chân GPIO
   POWER.md                  # Sơ đồ nguồn 2S
   BRINGUP_CHECKLIST.md      # Checklist test từng bước

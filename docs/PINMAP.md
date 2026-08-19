@@ -45,3 +45,5 @@ Nguồn chân trong firmware: `firmware/esp32/main/board_pins.h`.
 | VL53L0X | 0x29 |
 
 Khi scan I2C thành công bạn sẽ thấy đủ 3 địa chỉ trên.
+
+**Bảng nối từng cổng module (VCC, SDA, AIN1…):** `docs/WIRING_PINS.md`

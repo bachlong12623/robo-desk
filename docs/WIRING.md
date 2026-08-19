@@ -4,6 +4,8 @@ Tài liệu này giả định bạn **chưa từng làm mạch điện**. Làm 
 
 **Đọc kèm:** `BOM.txt` (linh kiện), `docs/PINMAP.md` (chân GPIO), `docs/POWER.md` (nguồn).
 
+> **★ Bảng nối từng cổng module ↔ ESP32:** xem [`docs/WIRING_PINS.md`](WIRING_PINS.md) — có nhãn in trên từng mạch (VCC, SDA, AIN1…) và số lỗ header DevKit.
+
 ---
 
 ## 0. Bạn cần biết gì trước khi bắt đầu?
@@ -125,6 +127,8 @@ Xem chi tiết `docs/POWER.md`. Tóm tắt từng dây:
 ---
 
 ## 3. Đấu từng khối — bảng chi tiết
+
+> **Chi tiết từng chân in trên module → GPIO + số lỗ header ESP32:** [`docs/WIRING_PINS.md`](WIRING_PINS.md)
 
 ### 3.1 Bus I2C (MPU6050 + DHT20 + VL53L0X)
 

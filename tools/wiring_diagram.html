@@ -3,421 +3,575 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RoboDesk — Sơ đồ đấu dây</title>
+  <title>RoboDesk — Sơ đồ chân IO chi tiết</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>
     :root {
-      --bg: #0f1419;
-      --panel: #1a2332;
-      --border: #2d3a4f;
-      --text: #e8eef7;
-      --muted: #8b9cb3;
-      --esp: #3b82f6;
-      --pwr: #ef4444;
-      --i2c: #22c55e;
-      --spi: #a855f7;
-      --i2s: #06b6d4;
-      --motor: #f59e0b;
-      --gpio: #94a3b8;
-      --hl: #fbbf24;
+      --bg: #0b0f14; --panel: #151c28; --card: #1c2636; --border: #2d3f58;
+      --text: #eef4fc; --muted: #8fa3bf;
+      --pwr: #f87171; --i2c: #4ade80; --spi: #c084fc; --i2s: #22d3ee;
+      --motor: #fbbf24; --gpio: #94a3b8; --hl: #fde047;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: "Segoe UI", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: grid;
-      grid-template-rows: auto 1fr;
+    body { font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+    header { padding: 0.75rem 1rem; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+    header h1 { font-size: 1.1rem; font-weight: 600; margin-right: auto; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+    .tabs { display: flex; gap: 0.25rem; }
+    .tab, .btn, select, input[type=search] {
+      padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--card); color: var(--text); font-size: 0.78rem; cursor: pointer;
     }
-    header {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--panel);
-    }
-    header h1 { font-size: 1.25rem; font-weight: 600; }
-    header p { color: var(--muted); font-size: 0.875rem; margin-top: 0.25rem; }
-    main {
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 0;
-      min-height: 0;
-    }
-    @media (max-width: 900px) {
-      main { grid-template-columns: 1fr; }
-      aside { border-top: 1px solid var(--border); max-height: 40vh; }
-    }
-    .canvas-wrap {
-      position: relative;
-      overflow: auto;
-      padding: 1rem;
-    }
-    svg#diagram {
-      display: block;
-      min-width: 720px;
-      min-height: 620px;
-      width: 100%;
-      height: auto;
-    }
-    .node {
-      cursor: pointer;
-      transition: filter 0.15s;
-    }
-    .node:hover rect, .node:hover circle { filter: brightness(1.15); }
-    .node.active rect { stroke: var(--hl); stroke-width: 3; }
-    .wire { fill: none; stroke-width: 2.5; opacity: 0.55; transition: opacity 0.15s, stroke-width 0.15s; }
-    .wire.active { opacity: 1; stroke-width: 4; }
-    .wire.dim { opacity: 0.12; }
-    aside {
-      background: var(--panel);
-      border-left: 1px solid var(--border);
-      overflow-y: auto;
-      padding: 1rem;
-    }
-    aside h2 { font-size: 1rem; margin-bottom: 0.75rem; }
-    .detail-empty { color: var(--muted); font-size: 0.875rem; line-height: 1.5; }
-    .pin-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-    .pin-table th, .pin-table td {
-      border: 1px solid var(--border);
-      padding: 0.4rem 0.5rem;
-      text-align: left;
-    }
-    .pin-table th { background: #243044; color: var(--muted); font-weight: 500; }
-    .tag {
-      display: inline-block;
-      padding: 0.1rem 0.45rem;
-      border-radius: 4px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      margin-right: 0.25rem;
-    }
-    .tag-pwr { background: #7f1d1d; color: #fecaca; }
-    .tag-i2c { background: #14532d; color: #bbf7d0; }
-    .tag-spi { background: #581c87; color: #e9d5ff; }
-    .tag-i2s { background: #164e63; color: #a5f3fc; }
-    .tag-motor { background: #78350f; color: #fde68a; }
-    .tag-gpio { background: #334155; color: #cbd5e1; }
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem 1rem;
-      margin-top: 0.75rem;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-    .legend span::before {
-      content: "";
-      display: inline-block;
-      width: 12px; height: 3px;
-      margin-right: 0.35rem;
-      vertical-align: middle;
-      border-radius: 1px;
-    }
-    .leg-pwr::before { background: var(--pwr); }
-    .leg-i2c::before { background: var(--i2c); }
-    .leg-spi::before { background: var(--spi); }
-    .leg-i2s::before { background: var(--i2s); }
-    .leg-motor::before { background: var(--motor); }
-    .leg-gpio::before { background: var(--gpio); }
-    .tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-    .tab {
-      padding: 0.35rem 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      background: transparent;
-      color: var(--text);
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-    .tab.on { background: var(--esp); border-color: var(--esp); }
-    .view { display: none; }
-    .view.on { display: block; }
-    .power-svg { width: 100%; max-width: 280px; margin: 0 auto; display: block; }
+    .tab.on, .btn.on { background: #2563eb; border-color: #2563eb; }
+    input[type=search] { width: 160px; cursor: text; }
+    .chip { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.7rem; color: var(--muted); }
+    .chip i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+    main { display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+    .workspace { overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+    .view { display: none; flex: 1; min-height: 0; overflow: auto; }
+    .view.on { display: flex; flex-direction: column; }
+    #harness-wrap { flex: 1; overflow: auto; position: relative; background: #0d1219; }
+    #harness { display: block; min-width: 1100px; min-height: 900px; }
+    .zoom-bar { padding: 0.4rem 0.75rem; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; gap: 0.5rem; align-items: center; font-size: 0.75rem; color: var(--muted); }
+    aside { background: var(--panel); border-left: 1px solid var(--border); overflow-y: auto; padding: 0.75rem; }
+    aside h2 { font-size: 0.9rem; margin-bottom: 0.5rem; }
+    aside h3 { font-size: 0.75rem; color: var(--muted); margin: 0.75rem 0 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .pin-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.35rem; align-items: center; padding: 0.3rem 0.4rem; border-radius: 4px; font-size: 0.72rem; border: 1px solid transparent; cursor: pointer; }
+    .pin-row:hover, .pin-row.hl { background: #243044; border-color: var(--border); }
+    .pin-row .esp { text-align: right; color: #93c5fd; font-family: ui-monospace, monospace; }
+    .pin-row .mod { color: #fcd34d; font-family: ui-monospace, monospace; }
+    .pin-row .arr { color: var(--muted); }
+    table.net { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+    table.net th, table.net tr.data td { border: 1px solid var(--border); padding: 0.35rem 0.45rem; text-align: left; }
+    table.net th { background: #243044; color: var(--muted); position: sticky; top: 0; }
+    table.net tr.data { cursor: pointer; }
+    table.net tr.data:hover, table.net tr.data.hl { background: #243044; }
+    .mermaid-wrap { padding: 1rem; overflow: auto; flex: 1; }
+    .mermaid { background: #fff; border-radius: 8px; padding: 1rem; min-height: 200px; }
+    .esp-pin { cursor: pointer; }
+    .esp-pin:hover circle { r: 7; }
+    .esp-pin.used circle { stroke-width: 2; }
+    .esp-pin.unused { opacity: 0.25; }
+    .wire-path { fill: none; stroke-width: 2; cursor: pointer; opacity: 0.7; }
+    .wire-path:hover, .wire-path.hl { opacity: 1; stroke-width: 3.5; }
+    .wire-path.dim { opacity: 0.08; }
+    .wire-label { font-size: 9px; fill: var(--text); pointer-events: none; font-family: ui-monospace, monospace; }
+    .mod-box { cursor: pointer; }
+    .mod-box:hover rect { filter: brightness(1.12); }
+    .mod-box.hl rect { stroke: var(--hl); stroke-width: 2.5; }
+    .bus-filter { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-bottom: 0.5rem; }
+    .bus-filter label { font-size: 0.7rem; display: flex; align-items: center; gap: 0.25rem; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; border: 1px solid var(--border); }
+    .bus-filter input { accent-color: #2563eb; }
+    @media (max-width: 960px) { main { grid-template-columns: 1fr; } aside { max-height: 35vh; border-left: none; border-top: 1px solid var(--border); } }
   </style>
 </head>
 <body>
   <header>
-    <h1>RoboDesk — Sơ đồ đấu dây tương tác</h1>
-    <p>Bấm vào từng module để xem chân nào nối GPIO nào. Dữ liệu khớp <code>docs/WIRING_PINS.md</code>.</p>
-    <div class="legend">
-      <span class="leg-pwr">Nguồn 5V/3V3</span>
-      <span class="leg-i2c">I2C</span>
-      <span class="leg-spi">SPI (LCD)</span>
-      <span class="leg-i2s">I2S (âm thanh)</span>
-      <span class="leg-motor">Motor</span>
-      <span class="leg-gpio">GPIO digital</span>
+    <h1>RoboDesk — Sơ đồ chân IO (ESP32 ↔ từng cổng module)</h1>
+    <div class="tabs">
+      <button class="tab on" data-view="harness">Sơ đồ dây chân</button>
+      <button class="tab" data-view="netlist">Bảng netlist</button>
+      <button class="tab" data-view="mermaid">Mermaid</button>
+      <button class="tab" data-view="power">Nguồn 2S</button>
     </div>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Tìm GPIO / SDA / AIN1…">
+      <select id="mod-filter"><option value="">Tất cả module</option></select>
+      <button class="btn" id="reset-hl">Bỏ chọn</button>
+    </div>
+    <div class="chip"><i style="background:var(--pwr)"></i>Nguồn</div>
+    <div class="chip"><i style="background:var(--i2c)"></i>I2C</div>
+    <div class="chip"><i style="background:var(--spi)"></i>SPI</div>
+    <div class="chip"><i style="background:var(--i2s)"></i>I2S</div>
+    <div class="chip"><i style="background:var(--motor)"></i>Motor</div>
+    <div class="chip"><i style="background:var(--gpio)"></i>GPIO</div>
   </header>
   <main>
-    <div class="canvas-wrap">
-      <div class="tabs">
-        <button class="tab on" data-view="signal">Tín hiệu (ESP ↔ module)</button>
-        <button class="tab" data-view="power">Nguồn 2S</button>
+    <div class="workspace">
+      <div id="view-harness" class="view on">
+        <div class="zoom-bar">
+          <button class="btn" id="zoom-out">−</button>
+          <span id="zoom-lbl">100%</span>
+          <button class="btn" id="zoom-in">+</button>
+          <span>| Cuộn / kéo sơ đồ · Hover dây hoặc chân để xem cặp nối · Click module</span>
+        </div>
+        <div id="harness-wrap"><svg id="harness" viewBox="0 0 1100 900"></svg></div>
       </div>
-      <div id="view-signal" class="view on">
-        <svg id="diagram" viewBox="0 0 720 620" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div id="view-netlist" class="view">
+        <div class="bus-filter" id="bus-filters"></div>
+        <div style="overflow:auto;flex:1;padding:0.5rem">
+          <table class="net"><thead><tr>
+            <th>Bus</th><th>ESP32 (header)</th><th>↔</th><th>Module</th><th>Chân module</th><th>Ghi chú</th>
+          </tr></thead><tbody id="net-body"></tbody></table>
+        </div>
       </div>
-      <div id="view-power" class="view">
-        <svg class="power-svg" viewBox="0 0 400 480" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
-              <path d="M0,0 L8,4 L0,8 Z" fill="#8b9cb3"/>
-            </marker>
-          </defs>
-          <rect x="140" y="20" width="120" height="44" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
-          <text x="200" y="48" text-anchor="middle" fill="#e8eef7" font-size="13">USB sạc 2S</text>
-          <line x1="200" y1="64" x2="200" y2="90" stroke="#8b9cb3" marker-end="url(#arr)"/>
-          <rect x="120" y="90" width="160" height="50" rx="6" fill="#422006" stroke="#f59e0b" stroke-width="2"/>
-          <text x="200" y="112" text-anchor="middle" fill="#fde68a" font-size="12">2×18650 (2S)</text>
-          <text x="200" y="128" text-anchor="middle" fill="#8b9cb3" font-size="10">PACK+ / PACK−</text>
-          <line x1="200" y1="140" x2="200" y2="168" stroke="#ef4444" stroke-width="2" marker-end="url(#arr)"/>
-          <rect x="150" y="168" width="100" height="36" rx="6" fill="#450a0a" stroke="#ef4444" stroke-width="2"/>
-          <text x="200" y="191" text-anchor="middle" fill="#fecaca" font-size="12">Công tắc gạt</text>
-          <line x1="200" y1="204" x2="200" y2="232" stroke="#ef4444" stroke-width="2" marker-end="url(#arr)"/>
-          <rect x="130" y="232" width="140" height="44" rx="6" fill="#1e293b" stroke="#94a3b8" stroke-width="2"/>
-          <text x="200" y="252" text-anchor="middle" fill="#e8eef7" font-size="12">MP1584EN</text>
-          <text x="200" y="268" text-anchor="middle" fill="#22c55e" font-size="11" font-weight="bold">OUT = 5.00V</text>
-          <line x1="200" y1="276" x2="200" y2="310" stroke="#ef4444" stroke-width="3" marker-end="url(#arr)"/>
-          <rect x="80" y="310" width="240" height="36" rx="6" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
-          <text x="200" y="333" text-anchor="middle" fill="#fecaca" font-size="13" font-weight="600">BUS 5V</text>
-          <line x1="120" y1="346" x2="80" y2="400" stroke="#ef4444" stroke-width="2"/>
-          <line x1="160" y1="346" x2="140" y2="400" stroke="#ef4444" stroke-width="2"/>
-          <line x1="200" y1="346" x2="200" y2="400" stroke="#ef4444" stroke-width="2"/>
-          <line x1="240" y1="346" x2="260" y2="400" stroke="#ef4444" stroke-width="2"/>
-          <line x1="280" y1="346" x2="320" y2="400" stroke="#ef4444" stroke-width="2"/>
-          <rect x="40" y="400" width="80" height="32" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
-          <text x="80" y="420" text-anchor="middle" fill="#93c5fd" font-size="10">ESP VIN</text>
-          <rect x="110" y="400" width="60" height="32" rx="4" fill="#581c87" stroke="#a855f7"/>
-          <text x="140" y="420" text-anchor="middle" fill="#e9d5ff" font-size="10">WS2812</text>
-          <rect x="180" y="400" width="60" height="32" rx="4" fill="#78350f" stroke="#f59e0b"/>
-          <text x="210" y="420" text-anchor="middle" fill="#fde68a" font-size="10">DRV8833</text>
-          <rect x="250" y="400" width="70" height="32" rx="4" fill="#164e63" stroke="#06b6d4"/>
-          <text x="285" y="420" text-anchor="middle" fill="#a5f3fc" font-size="10">MAX98357</text>
-          <rect x="40" y="448" width="120" height="28" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
-          <text x="100" y="466" text-anchor="middle" fill="#93c5fd" font-size="10">ESP 3V3 → cảm biến, LCD, mic</text>
+      <div id="view-mermaid" class="view">
+        <div class="bus-filter" id="mermaid-filters"></div>
+        <div class="mermaid-wrap"><pre class="mermaid" id="mermaid-diagram"></pre></div>
+      </div>
+      <div id="view-power" class="view" style="padding:1rem;align-items:center;justify-content:center">
+        <svg viewBox="0 0 420 520" style="max-width:420px;width:100%">
+          <rect x="150" y="10" width="120" height="40" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+          <text x="210" y="35" text-anchor="middle" fill="#eef4fc" font-size="12">USB → Sạc 2S BM1</text>
+          <line x1="210" y1="50" x2="210" y2="75" stroke="#8fa3bf" marker-end="url(#a)"/>
+          <rect x="130" y="75" width="160" height="45" rx="6" fill="#422006" stroke="#fbbf24" stroke-width="2"/>
+          <text x="210" y="95" text-anchor="middle" fill="#fde68a" font-size="11">2×18650 nối tiếp (2S)</text>
+          <text x="210" y="112" text-anchor="middle" fill="#8fa3bf" font-size="9">PACK+ / PACK−</text>
+          <line x1="210" y1="120" x2="210" y2="145" stroke="#f87171" stroke-width="2"/>
+          <rect x="165" y="145" width="90" height="32" rx="5" fill="#450a0a" stroke="#f87171" stroke-width="2"/>
+          <text x="210" y="165" text-anchor="middle" fill="#fecaca" font-size="11">Công tắc gạt</text>
+          <line x1="210" y1="177" x2="210" y2="200" stroke="#f87171" stroke-width="2"/>
+          <rect x="145" y="200" width="130" height="40" rx="6" fill="#1e293b" stroke="#94a3b8" stroke-width="2"/>
+          <text x="210" y="218" text-anchor="middle" fill="#eef4fc" font-size="11">MP1584EN → 5.00V</text>
+          <text x="210" y="232" text-anchor="middle" fill="#4ade80" font-size="10">OUT+ = bus 5V</text>
+          <line x1="210" y1="240" x2="210" y2="270" stroke="#f87171" stroke-width="3"/>
+          <rect x="60" y="270" width="300" height="28" rx="5" fill="#7f1d1d" stroke="#f87171"/>
+          <text x="210" y="288" text-anchor="middle" fill="#fecaca" font-size="12" font-weight="bold">BUS 5V</text>
+          <text x="90" y="320" text-anchor="middle" fill="#93c5fd" font-size="9">ESP VIN</text>
+          <text x="150" y="320" text-anchor="middle" fill="#c084fc" font-size="9">WS2812 VCC</text>
+          <text x="210" y="320" text-anchor="middle" fill="#fbbf24" font-size="9">DRV8833 VM</text>
+          <text x="280" y="320" text-anchor="middle" fill="#22d3ee" font-size="9">MAX98357 Vin</text>
+          <line x1="90" y1="298" x2="90" y2="310" stroke="#f87171"/><line x1="150" y1="298" x2="150" y2="310" stroke="#f87171"/>
+          <line x1="210" y1="298" x2="210" y2="310" stroke="#f87171"/><line x1="280" y1="298" x2="280" y2="310" stroke="#f87171"/>
+          <rect x="80" y="340" width="260" height="50" rx="6" fill="#1e3a5f" stroke="#3b82f6"/>
+          <text x="210" y="360" text-anchor="middle" fill="#93c5fd" font-size="10">ESP 3V3 (J1-1) → MPU,DHT,VL53,LCD,INMP441,DRV VCC</text>
+          <text x="210" y="378" text-anchor="middle" fill="#8fa3bf" font-size="9">GND chung → tất cả GND</text>
+          <rect x="100" y="410" width="220" height="55" rx="6" fill="#243044" stroke="#94a3b8"/>
+          <text x="210" y="430" text-anchor="middle" fill="#eef4fc" font-size="10">Chia áp đo pin</text>
+          <text x="210" y="448" text-anchor="middle" fill="#fcd34d" font-size="9">PACK+ ─[100k]─┬─ GPIO10 (J1-18)</text>
+          <text x="210" y="462" text-anchor="middle" fill="#8fa3bf" font-size="9">              └──[33k]── GND</text>
+          <defs><marker id="a" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6Z" fill="#8fa3bf"/></marker></defs>
         </svg>
       </div>
     </div>
     <aside>
-      <h2 id="detail-title">Chọn một module</h2>
-      <div id="detail-body" class="detail-empty">
-        Bấm vào khối màu trên sơ đồ để xem bảng nối dây: nhãn in trên module → GPIO ESP32-S3.
-      </div>
+      <h2 id="aside-title">Tất cả kết nối chân</h2>
+      <div class="bus-filter" id="aside-bus"></div>
+      <div id="aside-list"></div>
     </aside>
   </main>
   <script>
-    const MODULES = {
-      esp: {
-        label: "ESP32-S3 DevKit N16R8",
-        x: 280, y: 240, w: 160, h: 140, color: "#1e3a5f", stroke: "#3b82f6",
-        pins: [
-          ["3V3 (J1-1)", "→ MPU, DHT20, VL53, LCD, mic, DRV VCC", "pwr"],
-          ["GND", "→ Mass chung tất cả module", "pwr"],
-          ["VIN / 5V", "← MP1584 OUT+ (5V)", "pwr"],
-        ]
-      },
-      mpu: {
-        label: "MPU6050", sub: "I2C 0x68", x: 40, y: 80, w: 110, h: 56, color: "#14532d", stroke: "#22c55e",
-        pins: [
-          ["VCC", "ESP 3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["SDA", "GPIO 8 (J1-12)", "i2c"], ["SCL", "GPIO 9 (J1-17)", "i2c"],
-          ["AD0", "GND (addr 0x68)", "gpio"],
-        ],
-        wires: [
-          { to: "esp", color: "#22c55e", type: "i2c" },
-          { to: "esp", color: "#ef4444", type: "pwr" },
-        ]
-      },
-      dht: {
-        label: "DHT20", sub: "I2C 0x38", x: 40, y: 200, w: 110, h: 56, color: "#14532d", stroke: "#22c55e",
-        pins: [
-          ["VCC", "ESP 3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["SDA", "GPIO 8", "i2c"], ["SCL", "GPIO 9", "i2c"],
-        ],
-        wires: [{ to: "esp", color: "#22c55e", type: "i2c" }]
-      },
-      vl53: {
-        label: "VL53L0X", sub: "I2C 0x29", x: 40, y: 320, w: 110, h: 56, color: "#14532d", stroke: "#22c55e",
-        pins: [
-          ["VCC", "ESP 3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["SDA", "GPIO 8", "i2c"], ["SCL", "GPIO 9", "i2c"],
-          ["XSHUT", "3V3 (luôn bật)", "pwr"],
-        ],
-        wires: [{ to: "esp", color: "#22c55e", type: "i2c" }]
-      },
-      lcd: {
-        label: "GC9A01 1.28\"", sub: "SPI màn tròn", x: 280, y: 40, w: 160, h: 56, color: "#581c87", stroke: "#a855f7",
-        pins: [
-          ["VCC", "3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["SCL/SCK", "GPIO 12 (J1-20)", "spi"], ["SDA/MOSI", "GPIO 11 (J1-19)", "spi"],
-          ["CS", "GPIO 48 (J3-15)", "spi"], ["DC", "GPIO 13 (J1-21)", "spi"],
-          ["RST", "GPIO 14 (J1-22)", "spi"], ["BL", "GPIO 21 (J3-17)", "spi"],
-        ],
-        wires: [{ to: "esp", color: "#a855f7", type: "spi" }]
-      },
-      mic: {
-        label: "INMP441", sub: "Micro I2S", x: 40, y: 440, w: 110, h: 56, color: "#164e63", stroke: "#06b6d4",
-        pins: [
-          ["VDD", "3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["SCK", "GPIO 5 (J1-5)", "i2s"], ["WS", "GPIO 4 (J1-4)", "i2s"],
-          ["SD", "GPIO 6 (J1-6)", "i2s"], ["L/R", "GND (mono)", "gpio"],
-        ],
-        wires: [{ to: "esp", color: "#06b6d4", type: "i2s" }]
-      },
-      amp: {
-        label: "MAX98357A", sub: "Amp I2S + loa", x: 570, y: 440, w: 120, h: 56, color: "#164e63", stroke: "#06b6d4",
-        pins: [
-          ["Vin", "5V bus", "pwr"], ["GND", "GND", "pwr"],
-          ["BCLK", "GPIO 17 (J1-10)", "i2s"], ["LRC", "GPIO 18 (J1-11)", "i2s"],
-          ["DIN", "GPIO 16 (J1-9)", "i2s"], ["GAIN", "GND", "gpio"],
-          ["SD", "3V3 (bật amp)", "pwr"], ["+/−", "Loa 3W", "gpio"],
-        ],
-        wires: [{ to: "esp", color: "#06b6d4", type: "i2s" }]
-      },
-      led: {
-        label: "WS2812 Ring", sub: "12 LED NeoPixel", x: 500, y: 40, w: 120, h: 56, color: "#581c87", stroke: "#a855f7",
-        pins: [
-          ["VCC", "5V (+ tụ 470µF)", "pwr"], ["GND", "GND", "pwr"],
-          ["DIN", "GPIO 38 qua level shifter", "spi"],
-        ],
-        wires: [{ to: "esp", color: "#f59e0b", type: "spi" }]
-      },
-      drv: {
-        label: "DRV8833", sub: "Driver motor", x: 500, y: 240, w: 120, h: 70, color: "#78350f", stroke: "#f59e0b",
-        pins: [
-          ["VM", "5V", "pwr"], ["VCC", "3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["nSLEEP", "3V3", "pwr"],
-          ["AIN1", "GPIO 1 (J3-3)", "motor"], ["AIN2", "GPIO 2 (J3-4)", "motor"],
-          ["BIN1", "GPIO 41 (J3-6)", "motor"], ["BIN2", "GPIO 42 (J3-5)", "motor"],
-          ["AOUT1/2", "Motor TRÁI N20", "motor"], ["BOUT1/2", "Motor PHẢI N20", "motor"],
-        ],
-        wires: [{ to: "esp", color: "#f59e0b", type: "motor" }]
-      },
-      tcrt_l: {
-        label: "TCRT trái", sub: "Cliff sensor", x: 500, y: 360, w: 100, h: 50, color: "#334155", stroke: "#94a3b8",
-        pins: [
-          ["VCC", "3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["DO", "GPIO 15 (J1-8)", "gpio"], ["AO", "Không nối", "gpio"],
-        ],
-        wires: [{ to: "esp", color: "#94a3b8", type: "gpio" }]
-      },
-      tcrt_r: {
-        label: "TCRT phải", sub: "Cliff sensor", x: 500, y: 430, w: 100, h: 50, color: "#334155", stroke: "#94a3b8",
-        pins: [
-          ["VCC", "3V3", "pwr"], ["GND", "GND", "pwr"],
-          ["DO", "GPIO 7 (J1-7)", "gpio"],
-        ],
-        wires: [{ to: "esp", color: "#94a3b8", type: "gpio" }]
-      },
-      rd04: {
-        label: "Rd-04", sub: "Radar presence", x: 500, y: 500, w: 100, h: 50, color: "#334155", stroke: "#94a3b8",
-        pins: [
-          ["VCC", "5V hoặc 3V3 (đọc silk)", "pwr"], ["GND", "GND", "pwr"],
-          ["OUT", "GPIO 40 (J3-7)", "gpio"],
-        ],
-        wires: [{ to: "esp", color: "#94a3b8", type: "gpio" }]
-      },
+    mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
+
+    const BUS = {
+      pwr: { label: 'Nguồn', color: '#f87171' },
+      i2c: { label: 'I2C', color: '#4ade80' },
+      spi: { label: 'SPI', color: '#c084fc' },
+      i2s: { label: 'I2S', color: '#22d3ee' },
+      motor: { label: 'Motor', color: '#fbbf24' },
+      gpio: { label: 'GPIO', color: '#94a3b8' },
     };
 
-    const WIRE_LIST = [
-      ["mpu", "esp", "#22c55e"], ["dht", "esp", "#22c55e"], ["vl53", "esp", "#22c55e"],
-      ["lcd", "esp", "#a855f7"], ["mic", "esp", "#06b6d4"], ["amp", "esp", "#06b6d4"],
-      ["led", "esp", "#f59e0b"], ["drv", "esp", "#f59e0b"],
-      ["tcrt_l", "esp", "#94a3b8"], ["tcrt_r", "esp", "#94a3b8"], ["rd04", "esp", "#94a3b8"],
+    /* Mỗi dòng = một sợi dây: ESP chân ↔ Module chân */
+    const NET = [
+      /* --- Nguồn ESP --- */
+      { id:'n01', bus:'pwr', esp:'VIN', hdr:'VIN/5V', mod:'MP1584', pin:'OUT+', note:'Bus 5V từ buck' },
+      { id:'n02', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'MPU6050', pin:'VCC', note:'' },
+      { id:'n03', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'DHT20', pin:'VCC', note:'' },
+      { id:'n04', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'VL53L0X', pin:'VCC', note:'' },
+      { id:'n05', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'GC9A01', pin:'VCC', note:'' },
+      { id:'n06', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'INMP441', pin:'VDD', note:'' },
+      { id:'n07', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'DRV8833', pin:'VCC', note:'Logic 3.3V' },
+      { id:'n08', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'DRV8833', pin:'nSLEEP', note:'Kéo HIGH' },
+      { id:'n09', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'MAX98357A', pin:'SD', note:'Bật amp' },
+      { id:'n10', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'VL53L0X', pin:'XSHUT', note:'Giữ sensor ON' },
+      { id:'n11', bus:'pwr', esp:'5V', hdr:'J1-23', mod:'WS2812', pin:'VCC', note:'+ tụ 470µF' },
+      { id:'n12', bus:'pwr', esp:'5V', hdr:'J1-23', mod:'DRV8833', pin:'VM', note:'+ tụ 100µF' },
+      { id:'n13', bus:'pwr', esp:'5V', hdr:'J1-23', mod:'MAX98357A', pin:'Vin', note:'' },
+      { id:'n14', bus:'pwr', esp:'5V', hdr:'J1-23', mod:'Rd-04', pin:'VCC', note:'Nếu module 5V' },
+      { id:'n15', bus:'pwr', esp:'GND', hdr:'J1-24', mod:'*', pin:'GND', note:'Mass chung tất cả module' },
+      /* --- I2C --- */
+      { id:'i01', bus:'i2c', esp:'GPIO8', hdr:'J1-12', mod:'MPU6050', pin:'SDA', note:'Addr 0x68' },
+      { id:'i02', bus:'i2c', esp:'GPIO9', hdr:'J1-17', mod:'MPU6050', pin:'SCL', note:'' },
+      { id:'i03', bus:'i2c', esp:'GPIO8', hdr:'J1-12', mod:'DHT20', pin:'SDA', note:'Addr 0x38' },
+      { id:'i04', bus:'i2c', esp:'GPIO9', hdr:'J1-17', mod:'DHT20', pin:'SCL', note:'' },
+      { id:'i05', bus:'i2c', esp:'GPIO8', hdr:'J1-12', mod:'VL53L0X', pin:'SDA', note:'Addr 0x29' },
+      { id:'i06', bus:'i2c', esp:'GPIO9', hdr:'J1-17', mod:'VL53L0X', pin:'SCL', note:'' },
+      { id:'i07', bus:'gpio', esp:'GND', hdr:'J1-24', mod:'MPU6050', pin:'AD0', note:'→ addr 0x68' },
+      /* --- SPI LCD --- */
+      { id:'s01', bus:'spi', esp:'GPIO11', hdr:'J1-19', mod:'GC9A01', pin:'SDA/MOSI', note:'' },
+      { id:'s02', bus:'spi', esp:'GPIO12', hdr:'J1-20', mod:'GC9A01', pin:'SCL/SCK', note:'' },
+      { id:'s03', bus:'spi', esp:'GPIO48', hdr:'J3-15', mod:'GC9A01', pin:'CS', note:'' },
+      { id:'s04', bus:'spi', esp:'GPIO13', hdr:'J1-21', mod:'GC9A01', pin:'DC', note:'' },
+      { id:'s05', bus:'spi', esp:'GPIO14', hdr:'J1-22', mod:'GC9A01', pin:'RST', note:'' },
+      { id:'s06', bus:'spi', esp:'GPIO21', hdr:'J3-17', mod:'GC9A01', pin:'BL', note:'Backlight PWM' },
+      /* --- I2S mic --- */
+      { id:'m01', bus:'i2s', esp:'GPIO5', hdr:'J1-5', mod:'INMP441', pin:'SCK', note:'I2S BCLK' },
+      { id:'m02', bus:'i2s', esp:'GPIO4', hdr:'J1-4', mod:'INMP441', pin:'WS', note:'I2S LRCLK' },
+      { id:'m03', bus:'i2s', esp:'GPIO6', hdr:'J1-6', mod:'INMP441', pin:'SD', note:'Data out' },
+      { id:'m04', bus:'gpio', esp:'GND', hdr:'J1-24', mod:'INMP441', pin:'L/R', note:'Mono left' },
+      /* --- I2S amp --- */
+      { id:'a01', bus:'i2s', esp:'GPIO17', hdr:'J1-10', mod:'MAX98357A', pin:'BCLK', note:'' },
+      { id:'a02', bus:'i2s', esp:'GPIO18', hdr:'J1-11', mod:'MAX98357A', pin:'LRC', note:'' },
+      { id:'a03', bus:'i2s', esp:'GPIO16', hdr:'J1-9', mod:'MAX98357A', pin:'DIN', note:'' },
+      { id:'a04', bus:'gpio', esp:'GND', hdr:'J1-24', mod:'MAX98357A', pin:'GAIN', note:'9dB' },
+      { id:'a05', bus:'gpio', esp:'—', hdr:'—', mod:'MAX98357A', pin:'+/−', note:'→ Loa 3W' },
+      /* --- WS2812 --- */
+      { id:'w01', bus:'spi', esp:'GPIO38', hdr:'J3-9', mod:'LevelShifter', pin:'LV1 in', note:'3.3V side' },
+      { id:'w02', bus:'spi', esp:'—', hdr:'—', mod:'LevelShifter', pin:'HV1 out', note:'→ WS2812 DIN' },
+      { id:'w03', bus:'spi', esp:'—', hdr:'—', mod:'WS2812', pin:'DIN', note:'Từ level shifter' },
+      /* --- Motor --- */
+      { id:'d01', bus:'motor', esp:'GPIO1', hdr:'J3-3', mod:'DRV8833', pin:'AIN1', note:'Motor trái' },
+      { id:'d02', bus:'motor', esp:'GPIO2', hdr:'J3-4', mod:'DRV8833', pin:'AIN2', note:'Motor trái' },
+      { id:'d03', bus:'motor', esp:'GPIO41', hdr:'J3-6', mod:'DRV8833', pin:'BIN1', note:'Motor phải' },
+      { id:'d04', bus:'motor', esp:'GPIO42', hdr:'J3-5', mod:'DRV8833', pin:'BIN2', note:'Motor phải' },
+      { id:'d05', bus:'motor', esp:'—', hdr:'—', mod:'DRV8833', pin:'AOUT1/2', note:'→ N20 trái' },
+      { id:'d06', bus:'motor', esp:'—', hdr:'—', mod:'DRV8833', pin:'BOUT1/2', note:'→ N20 phải' },
+      /* --- Cliff / radar --- */
+      { id:'g01', bus:'gpio', esp:'GPIO15', hdr:'J1-8', mod:'TCRT trái', pin:'DO', note:'Cliff' },
+      { id:'g02', bus:'gpio', esp:'GPIO7', hdr:'J1-7', mod:'TCRT phải', pin:'DO', note:'Cliff' },
+      { id:'g03', bus:'gpio', esp:'GPIO40', hdr:'J3-7', mod:'Rd-04', pin:'OUT', note:'Presence' },
+      { id:'g04', bus:'gpio', esp:'GPIO10', hdr:'J1-18', mod:'Chia áp', pin:'Mid', note:'100k/33k từ PACK+' },
+      { id:'g05', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'TCRT trái', pin:'VCC', note:'' },
+      { id:'g06', bus:'pwr', esp:'3V3', hdr:'J1-1', mod:'TCRT phải', pin:'VCC', note:'' },
     ];
 
-    const svg = document.getElementById("diagram");
-    const tagClass = { pwr: "tag-pwr", i2c: "tag-i2c", spi: "tag-spi", i2s: "tag-i2s", motor: "tag-motor", gpio: "tag-gpio" };
+    const MODULES = [
+      { id:'MPU6050', label:'MPU6050', sub:'I2C 0x68', x:40, y:120, w:130, h:100, side:'left' },
+      { id:'DHT20', label:'DHT20', sub:'I2C 0x38', x:40, y:260, w:130, h:80, side:'left' },
+      { id:'VL53L0X', label:'VL53L0X', sub:'I2C 0x29', x:40, y:380, w:130, h:90, side:'left' },
+      { id:'GC9A01', label:'GC9A01', sub:'SPI 1.28"', x:420, y:30, w:150, h:130, side:'top' },
+      { id:'INMP441', label:'INMP441', sub:'I2S mic', x:40, y:520, w:130, h:90, side:'left' },
+      { id:'MAX98357A', label:'MAX98357A', sub:'I2S amp', x:40, y:650, w:130, h:100, side:'left' },
+      { id:'WS2812', label:'WS2812', sub:'12 LED', x:900, y:40, w:120, h:70, side:'right' },
+      { id:'LevelShifter', label:'Level 3.3→5V', sub:'WS2812 DATA', x:750, y:40, w:110, h:55, side:'right' },
+      { id:'DRV8833', label:'DRV8833', sub:'Motor driver', x:900, y:280, w:130, h:130, side:'right' },
+      { id:'TCRT trái', label:'TCRT trái', sub:'GPIO15', x:900, y:460, w:110, h:65, side:'right' },
+      { id:'TCRT phải', label:'TCRT phải', sub:'GPIO7', x:900, y:550, w:110, h:65, side:'right' },
+      { id:'Rd-04', label:'Rd-04', sub:'GPIO40', x:900, y:640, w:110, h:65, side:'right' },
+      { id:'MP1584', label:'MP1584', sub:'5V buck', x:420, y:780, w:120, h:55, side:'bottom' },
+      { id:'Chia áp', label:'Chia áp', sub:'GPIO10', x:600, y:780, w:110, h:55, side:'bottom' },
+    ];
 
-    function center(m) {
-      return { x: m.x + m.w / 2, y: m.y + m.h / 2 };
+    const ESP = { x: 480, y: 200, w: 140, h: 480 };
+    const PIN_H = 17;
+    const ESP_PINS = [
+      { hdr:'J1', hole:1, y:0, label:'3V3', gpio:'3V3', used:true, bus:'pwr' },
+      { hdr:'J1', hole:4, y:1, label:'GPIO4', gpio:'GPIO4', used:true, bus:'i2s' },
+      { hdr:'J1', hole:5, y:2, label:'GPIO5', gpio:'GPIO5', used:true, bus:'i2s' },
+      { hdr:'J1', hole:6, y:3, label:'GPIO6', gpio:'GPIO6', used:true, bus:'i2s' },
+      { hdr:'J1', hole:7, y:4, label:'GPIO7', gpio:'GPIO7', used:true, bus:'gpio' },
+      { hdr:'J1', hole:8, y:5, label:'GPIO15', gpio:'GPIO15', used:true, bus:'gpio' },
+      { hdr:'J1', hole:9, y:6, label:'GPIO16', gpio:'GPIO16', used:true, bus:'i2s' },
+      { hdr:'J1', hole:10, y:7, label:'GPIO17', gpio:'GPIO17', used:true, bus:'i2s' },
+      { hdr:'J1', hole:11, y:8, label:'GPIO18', gpio:'GPIO18', used:true, bus:'i2s' },
+      { hdr:'J1', hole:12, y:9, label:'GPIO8', gpio:'GPIO8', used:true, bus:'i2c' },
+      { hdr:'J1', hole:17, y:10, label:'GPIO9', gpio:'GPIO9', used:true, bus:'i2c' },
+      { hdr:'J1', hole:18, y:11, label:'GPIO10', gpio:'GPIO10', used:true, bus:'gpio' },
+      { hdr:'J1', hole:19, y:12, label:'GPIO11', gpio:'GPIO11', used:true, bus:'spi' },
+      { hdr:'J1', hole:20, y:13, label:'GPIO12', gpio:'GPIO12', used:true, bus:'spi' },
+      { hdr:'J1', hole:21, y:14, label:'GPIO13', gpio:'GPIO13', used:true, bus:'spi' },
+      { hdr:'J1', hole:22, y:15, label:'GPIO14', gpio:'GPIO14', used:true, bus:'spi' },
+      { hdr:'J1', hole:23, y:16, label:'5V', gpio:'5V', used:true, bus:'pwr' },
+      { hdr:'J1', hole:24, y:17, label:'GND', gpio:'GND', used:true, bus:'pwr' },
+      { hdr:'J3', hole:3, y:0, label:'GPIO1', gpio:'GPIO1', used:true, bus:'motor' },
+      { hdr:'J3', hole:4, y:1, label:'GPIO2', gpio:'GPIO2', used:true, bus:'motor' },
+      { hdr:'J3', hole:5, y:2, label:'GPIO42', gpio:'GPIO42', used:true, bus:'motor' },
+      { hdr:'J3', hole:6, y:3, label:'GPIO41', gpio:'GPIO41', used:true, bus:'motor' },
+      { hdr:'J3', hole:7, y:4, label:'GPIO40', gpio:'GPIO40', used:true, bus:'gpio' },
+      { hdr:'J3', hole:9, y:5, label:'GPIO38', gpio:'GPIO38', used:true, bus:'spi' },
+      { hdr:'J3', hole:15, y:6, label:'GPIO48', gpio:'GPIO48', used:true, bus:'spi' },
+      { hdr:'J3', hole:17, y:7, label:'GPIO21', gpio:'GPIO21', used:true, bus:'spi' },
+      { hdr:'J3', hole:18, y:8, label:'GND', gpio:'GND', used:true, bus:'pwr' },
+    ];
+
+    let state = { hl: null, mod: '', q: '', buses: new Set(Object.keys(BUS)), zoom: 1 };
+    const svg = document.getElementById('harness');
+    const modMap = Object.fromEntries(MODULES.map(m => [m.id, m]));
+
+    function pinPos(pin, side) {
+      const baseY = ESP.y + 36 + pin.y * PIN_H;
+      if (side === 'left' || pin.hdr === 'J1') return { x: ESP.x, y: baseY };
+      return { x: ESP.x + ESP.w, y: ESP.y + 36 + pin.y * PIN_H };
     }
 
-    function draw() {
-      const gWires = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      gWires.id = "wires";
-      WIRE_LIST.forEach(([a, b, color], i) => {
-        const ma = MODULES[a], mb = MODULES[b];
-        const ca = center(ma), cb = center(mb);
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        const mx = (ca.x + cb.x) / 2;
-        path.setAttribute("d", `M${ca.x},${ca.y} Q${mx},${ca.y} ${cb.x},${cb.y}`);
-        path.setAttribute("stroke", color);
-        path.classList.add("wire");
-        path.dataset.wire = `${a}-${b}`;
-        path.dataset.nodes = `${a},${b}`;
+    function modPinPos(mod, pinName, idx, total) {
+      const side = mod.side;
+      const py = mod.y + 28 + idx * 14;
+      if (side === 'left') return { x: mod.x + mod.w, y: py };
+      if (side === 'right') return { x: mod.x, y: py };
+      if (side === 'top') return { x: mod.x + 20 + idx * 18, y: mod.y + mod.h };
+      return { x: mod.x + mod.w / 2, y: mod.y };
+    }
+
+    function getModPins(modId) {
+      const pins = [...new Set(NET.filter(n => n.mod === modId).map(n => n.pin))];
+      return pins;
+    }
+
+    function espPinFor(net) {
+      if (net.esp === '—') return null;
+      return ESP_PINS.find(p => p.gpio === net.esp || (net.esp === 'VIN' && p.gpio === '5V'));
+    }
+
+    function filteredNet() {
+      return NET.filter(n => {
+        if (!state.buses.has(n.bus)) return false;
+        if (state.mod && n.mod !== state.mod) return false;
+        if (state.q) {
+          const q = state.q.toLowerCase();
+          const hay = `${n.esp} ${n.hdr} ${n.mod} ${n.pin} ${n.note}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function drawHarness() {
+      svg.innerHTML = '';
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      defs.innerHTML = '<marker id="arr" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5Z" fill="#8fa3bf"/></marker>';
+      svg.appendChild(defs);
+
+      const gWires = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      gWires.id = 'wires';
+      const nets = filteredNet().filter(n => n.esp !== '—' && n.mod !== '*');
+
+      nets.forEach(n => {
+        const ep = espPinFor(n);
+        if (!ep) return;
+        const mod = modMap[n.mod];
+        if (!mod) return;
+        const pins = getModPins(n.mod);
+        const idx = pins.indexOf(n.pin);
+        if (idx < 0) return;
+        const p0 = pinPos(ep, ep.hdr === 'J1' ? 'left' : 'right');
+        const p1 = modPinPos(mod, n.pin, idx, pins.length);
+        const mx = (p0.x + p1.x) / 2;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M${p0.x},${p0.y} C${mx},${p0.y} ${mx},${p1.y} ${p1.x},${p1.y}`);
+        path.setAttribute('stroke', BUS[n.bus].color);
+        path.setAttribute('fill', 'none');
+        path.classList.add('wire-path');
+        path.dataset.id = n.id;
+        const dim = state.hl && state.hl !== n.id && state.hl !== n.esp && state.hl !== n.mod;
+        if (dim) path.classList.add('dim');
+        if (state.hl === n.id || state.hl === n.esp || state.hl === n.mod) path.classList.add('hl');
+        path.addEventListener('mouseenter', () => highlight('id', n.id));
+        path.addEventListener('mouseleave', () => highlight(null));
         gWires.appendChild(path);
+
+        const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        lbl.setAttribute('x', (p0.x + p1.x) / 2);
+        lbl.setAttribute('y', (p0.y + p1.y) / 2 - 4);
+        lbl.setAttribute('text-anchor', 'middle');
+        lbl.classList.add('wire-label');
+        lbl.setAttribute('opacity', dim ? 0.1 : 0.85);
+        lbl.textContent = `${n.esp} ↔ ${n.pin}`;
+        gWires.appendChild(lbl);
       });
       svg.appendChild(gWires);
 
-      const gNodes = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      gNodes.id = "nodes";
-      Object.entries(MODULES).forEach(([id, m]) => {
-        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-        g.classList.add("node");
-        g.dataset.id = id;
-        const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        r.setAttribute("x", m.x); r.setAttribute("y", m.y);
-        r.setAttribute("width", m.w); r.setAttribute("height", m.h);
-        r.setAttribute("rx", 8);
-        r.setAttribute("fill", m.color);
-        r.setAttribute("stroke", m.stroke);
-        r.setAttribute("stroke-width", 2);
+      const gEsp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      const body = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      body.setAttribute('x', ESP.x); body.setAttribute('y', ESP.y);
+      body.setAttribute('width', ESP.w); body.setAttribute('height', ESP.h);
+      body.setAttribute('rx', 10); body.setAttribute('fill', '#1e3a5f'); body.setAttribute('stroke', '#3b82f6'); body.setAttribute('stroke-width', 2);
+      gEsp.appendChild(body);
+      const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      title.setAttribute('x', ESP.x + ESP.w/2); title.setAttribute('y', ESP.y + 22);
+      title.setAttribute('text-anchor', 'middle'); title.setAttribute('fill', '#eef4fc');
+      title.setAttribute('font-size', '12'); title.setAttribute('font-weight', '600');
+      title.textContent = 'ESP32-S3 DevKit N16R8';
+      gEsp.appendChild(title);
+      const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      sub.setAttribute('x', ESP.x + ESP.w/2); sub.setAttribute('y', ESP.y + 36);
+      sub.setAttribute('text-anchor', 'middle'); sub.setAttribute('fill', '#8fa3bf'); sub.setAttribute('font-size', '9');
+      sub.textContent = 'J1 ← trái · J3 → phải · USB dưới';
+      gEsp.appendChild(sub);
+
+      ESP_PINS.forEach(pin => {
+        const side = pin.hdr === 'J1' ? 'left' : 'right';
+        const pos = pinPos(pin, side);
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.classList.add('esp-pin', pin.used ? 'used' : 'unused');
+        g.dataset.gpio = pin.gpio;
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', pos.x); c.setAttribute('cy', pos.y); c.setAttribute('r', 5);
+        c.setAttribute('fill', BUS[pin.bus]?.color || '#64748b');
+        c.setAttribute('stroke', '#0b0f14');
+        g.appendChild(c);
+        const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t.setAttribute('x', side === 'left' ? pos.x - 8 : pos.x + 8);
+        t.setAttribute('y', pos.y + 3);
+        t.setAttribute('text-anchor', side === 'left' ? 'end' : 'start');
+        t.setAttribute('fill', '#cbd5e1'); t.setAttribute('font-size', '8');
+        t.setAttribute('font-family', 'ui-monospace, monospace');
+        t.textContent = `${pin.label} (${pin.hdr}-${pin.hole})`;
+        g.appendChild(t);
+        g.addEventListener('mouseenter', () => highlight('esp', pin.gpio));
+        g.addEventListener('mouseleave', () => highlight(null));
+        gEsp.appendChild(g);
+      });
+      svg.appendChild(gEsp);
+
+      const gMods = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      MODULES.forEach(mod => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.classList.add('mod-box');
+        g.dataset.mod = mod.id;
+        const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        r.setAttribute('x', mod.x); r.setAttribute('y', mod.y);
+        r.setAttribute('width', mod.w); r.setAttribute('height', mod.h);
+        r.setAttribute('rx', 8); r.setAttribute('fill', '#1c2636'); r.setAttribute('stroke', '#475569'); r.setAttribute('stroke-width', 1.5);
         g.appendChild(r);
-        const t1 = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        t1.setAttribute("x", m.x + m.w / 2);
-        t1.setAttribute("y", m.y + (m.sub ? 22 : 28));
-        t1.setAttribute("text-anchor", "middle");
-        t1.setAttribute("fill", "#e8eef7");
-        t1.setAttribute("font-size", id === "esp" ? "13" : "12");
-        t1.setAttribute("font-weight", "600");
-        t1.textContent = m.label;
+        const t1 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t1.setAttribute('x', mod.x + mod.w/2); t1.setAttribute('y', mod.y + 18);
+        t1.setAttribute('text-anchor', 'middle'); t1.setAttribute('fill', '#eef4fc');
+        t1.setAttribute('font-size', '11'); t1.setAttribute('font-weight', '600');
+        t1.textContent = mod.label;
         g.appendChild(t1);
-        if (m.sub) {
-          const t2 = document.createElementNS("http://www.w3.org/2000/svg", "text");
-          t2.setAttribute("x", m.x + m.w / 2);
-          t2.setAttribute("y", m.y + 38);
-          t2.setAttribute("text-anchor", "middle");
-          t2.setAttribute("fill", "#8b9cb3");
-          t2.setAttribute("font-size", "10");
-          t2.textContent = m.sub;
-          g.appendChild(t2);
-        }
-        g.addEventListener("click", () => select(id));
-        gNodes.appendChild(g);
+        const t2 = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        t2.setAttribute('x', mod.x + mod.w/2); t2.setAttribute('y', mod.y + 30);
+        t2.setAttribute('text-anchor', 'middle'); t2.setAttribute('fill', '#8fa3bf'); t2.setAttribute('font-size', '8');
+        t2.textContent = mod.sub;
+        g.appendChild(t2);
+
+        const pins = getModPins(mod.id);
+        pins.forEach((pname, i) => {
+          const mp = modPinPos(mod, pname, i, pins.length);
+          const tx = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          tx.setAttribute('x', mod.side === 'left' ? mod.x + 6 : mod.x + mod.w - 6);
+          tx.setAttribute('y', mp.y + 3);
+          tx.setAttribute('text-anchor', mod.side === 'left' ? 'start' : 'end');
+          tx.setAttribute('fill', '#fcd34d'); tx.setAttribute('font-size', '7.5');
+          tx.setAttribute('font-family', 'ui-monospace, monospace');
+          tx.textContent = pname;
+          g.appendChild(tx);
+          const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          dot.setAttribute('cx', mp.x); dot.setAttribute('cy', mp.y); dot.setAttribute('r', 3);
+          dot.setAttribute('fill', '#475569');
+          g.appendChild(dot);
+        });
+
+        g.addEventListener('click', () => { state.mod = mod.id; document.getElementById('mod-filter').value = mod.id; refresh(); });
+        gMods.appendChild(g);
       });
-      svg.appendChild(gNodes);
+      svg.appendChild(gMods);
     }
 
-    function select(id) {
-      document.querySelectorAll(".node").forEach(n => n.classList.toggle("active", n.dataset.id === id));
-      document.querySelectorAll(".wire").forEach(w => {
-        const nodes = w.dataset.nodes.split(",");
-        const on = nodes.includes(id);
-        w.classList.toggle("active", on);
-        w.classList.toggle("dim", id && !on);
+    function renderAside() {
+      const list = document.getElementById('aside-list');
+      const nets = filteredNet();
+      document.getElementById('aside-title').textContent = state.mod ? `Kết nối: ${state.mod}` : `Tất cả kết nối (${nets.length})`;
+      list.innerHTML = nets.map(n => {
+        const hl = state.hl === n.id || state.hl === n.esp || state.hl === n.mod ? 'hl' : '';
+        const espTxt = n.esp === '—' ? '—' : `${n.esp} <span style="color:#64748b">(${n.hdr})</span>`;
+        const note = n.note ? `<div style="font-size:0.65rem;color:#64748b;padding:0 0.4rem 0.3rem 0.4rem">${n.note}</div>` : '';
+        return `<div class="pin-row ${hl}" data-id="${n.id}" data-esp="${n.esp}" data-mod="${n.mod}">
+          <span class="esp">${espTxt}</span><span class="arr">↔</span>
+          <span class="mod">${n.mod} · ${n.pin}</span></div>${note}`;
+      }).join('');
+      list.querySelectorAll('.pin-row').forEach(el => {
+        el.addEventListener('mouseenter', () => highlight('id', el.dataset.id));
+        el.addEventListener('mouseleave', () => highlight(null));
+        el.addEventListener('click', () => highlight('id', el.dataset.id, true));
       });
-      const m = MODULES[id];
-      document.getElementById("detail-title").textContent = m.label + (m.sub ? " — " + m.sub : "");
-      let html = '<table class="pin-table"><thead><tr><th>Chân module</th><th>Nối tới</th></tr></thead><tbody>';
-      m.pins.forEach(([pin, dest, type]) => {
-        html += `<tr><td><span class="tag ${tagClass[type] || "tag-gpio"}">${pin}</span></td><td>${dest}</td></tr>`;
-      });
-      html += "</tbody></table>";
-      document.getElementById("detail-body").innerHTML = html;
-      document.getElementById("detail-body").classList.remove("detail-empty");
     }
 
-    document.querySelectorAll(".tab").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab").forEach(b => b.classList.remove("on"));
-        document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
-        btn.classList.add("on");
-        document.getElementById("view-" + btn.dataset.view).classList.add("on");
+    function renderNetlist() {
+      const tbody = document.getElementById('net-body');
+      tbody.innerHTML = filteredNet().map(n => {
+        const hl = state.hl === n.id ? 'hl' : '';
+        return `<tr class="data ${hl}" data-id="${n.id}">
+          <td><span style="color:${BUS[n.bus].color}">${BUS[n.bus].label}</span></td>
+          <td><code>${n.esp}</code> <small style="color:#64748b">${n.hdr}</small></td>
+          <td>↔</td><td>${n.mod}</td><td><code>${n.pin}</code></td><td>${n.note}</td></tr>`;
+      }).join('');
+      tbody.querySelectorAll('tr').forEach(tr => {
+        tr.addEventListener('click', () => highlight('id', tr.dataset.id, true));
+      });
+    }
+
+    async function renderMermaid() {
+      const buses = [...state.buses];
+      let code = 'flowchart LR\n';
+      code += '  subgraph ESP["ESP32-S3"]\n';
+      const espPins = [...new Set(filteredNet().filter(n=>n.esp!=='—').map(n=>n.esp))];
+      espPins.forEach(p => { code += `    E_${p.replace(/[^a-zA-Z0-9]/g,'')}["${p}"]\n`; });
+      code += '  end\n';
+      const mods = [...new Set(filteredNet().map(n=>n.mod).filter(m=>m!=='*'))];
+      mods.forEach(m => {
+        const id = m.replace(/[^a-zA-Z0-9]/g,'');
+        code += `  subgraph M_${id}["${m}"]\n`;
+        const pins = [...new Set(filteredNet().filter(n=>n.mod===m).map(n=>n.pin))];
+        pins.forEach(p => { code += `    ${id}_${p.replace(/[^a-zA-Z0-9]/g,'')}["${p}"]\n`; });
+        code += '  end\n';
+      });
+      filteredNet().forEach(n => {
+        if (n.esp === '—' || n.mod === '*') return;
+        const e = `E_${n.esp.replace(/[^a-zA-Z0-9]/g,'')}`;
+        const mid = n.mod.replace(/[^a-zA-Z0-9]/g,'');
+        const mp = `${mid}_${n.pin.replace(/[^a-zA-Z0-9]/g,'')}`;
+        code += `  ${e} <-->|${n.bus}| ${mp}\n`;
+      });
+      const el = document.getElementById('mermaid-diagram');
+      el.textContent = code;
+      el.removeAttribute('data-processed');
+      await mermaid.run({ nodes: [el] });
+    }
+
+    function highlight(kind, val, sticky) {
+      if (!sticky && kind === null) { if (!state.sticky) state.hl = null; }
+      else if (kind === 'id') { state.hl = val; state.sticky = !!sticky; }
+      else if (kind === 'esp') state.hl = val;
+      else if (kind === 'mod') state.hl = val;
+      if (!sticky && kind === null) state.sticky = false;
+      drawHarness();
+      renderAside();
+      renderNetlist();
+    }
+
+    function buildBusFilters(containerId, onChange) {
+      const c = document.getElementById(containerId);
+      c.innerHTML = Object.entries(BUS).map(([k,v]) =>
+        `<label><input type="checkbox" data-bus="${k}" checked> <span style="color:${v.color}">${v.label}</span></label>`
+      ).join('');
+      c.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('change', () => {
+          if (inp.checked) state.buses.add(inp.dataset.bus);
+          else state.buses.delete(inp.dataset.bus);
+          onChange();
+        });
+      });
+    }
+
+    function refresh() {
+      drawHarness();
+      renderAside();
+      renderNetlist();
+      if (document.getElementById('view-mermaid').classList.contains('on')) renderMermaid();
+    }
+
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+        btn.classList.add('on');
+        document.getElementById('view-' + btn.dataset.view).classList.add('on');
+        if (btn.dataset.view === 'mermaid') renderMermaid();
       });
     });
 
-    draw();
-    select("esp");
+    const mods = [...new Set(NET.map(n => n.mod).filter(m => m !== '*'))].sort();
+    const sel = document.getElementById('mod-filter');
+    mods.forEach(m => { const o = document.createElement('option'); o.value = m; o.textContent = m; sel.appendChild(o); });
+    sel.addEventListener('change', () => { state.mod = sel.value; refresh(); });
+    document.getElementById('search').addEventListener('input', e => { state.q = e.target.value; refresh(); });
+    document.getElementById('reset-hl').addEventListener('click', () => { state.hl = null; state.mod = ''; state.sticky = false; sel.value = ''; refresh(); });
+
+    buildBusFilters('bus-filters', refresh);
+    buildBusFilters('aside-bus', refresh);
+    buildBusFilters('mermaid-filters', () => { if (document.getElementById('view-mermaid').classList.contains('on')) renderMermaid(); refresh(); });
+
+    let scale = 1;
+    const wrap = document.getElementById('harness-wrap');
+    const zlbl = document.getElementById('zoom-lbl');
+    function setZoom(z) { scale = Math.max(0.5, Math.min(2, z)); svg.style.transform = `scale(${scale})`; svg.style.transformOrigin = '0 0'; zlbl.textContent = Math.round(scale*100)+'%'; }
+    document.getElementById('zoom-in').onclick = () => setZoom(scale + 0.1);
+    document.getElementById('zoom-out').onclick = () => setZoom(scale - 0.1);
+
+    refresh();
   </script>
 </body>
 </html>

@@ -47,6 +47,9 @@ python tools/preview_faces.py --mood happy
 
 # Sơ đồ đấu dây tương tác (mở file trong Chrome/Edge):
 # tools/wiring_diagram.html
+#   - Tab "Sơ đồ dây chân": từng GPIO ↔ chân module, nhãn trên dây
+#   - Tab "Bảng netlist": bảng đầy đủ có thể lọc/tìm
+#   - Tab "Mermaid": sơ đồ auto-generate theo bus
 ```
 
 ## Firmware ESP32-S3

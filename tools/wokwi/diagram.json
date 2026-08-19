@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "author": "RoboDesk",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-breadboard-half",
+      "id": "bb1",
+      "top": 120,
+      "left": 40,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-mpu6050",
+      "id": "mpu",
+      "top": -80,
+      "left": 320,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led-ring",
+      "id": "ring",
+      "top": -200,
+      "left": 120,
+      "attrs": { "pixels": "12" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn_cliff_l",
+      "top": 280,
+      "left": 40,
+      "attrs": { "color": "red", "label": "TCRT-L GPIO15" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn_cliff_r",
+      "top": 280,
+      "left": 120,
+      "attrs": { "color": "red", "label": "TCRT-R GPIO7" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn_presence",
+      "top": 280,
+      "left": 200,
+      "attrs": { "color": "green", "label": "Rd04 GPIO40" }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "btn_user",
+      "top": 280,
+      "left": 280,
+      "attrs": { "color": "blue", "label": "USER GPIO47" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot_batt",
+      "top": 360,
+      "left": 40,
+      "attrs": { "value": "2048" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "mot_l1",
+      "top": 360,
+      "left": 160,
+      "attrs": { "color": "yellow", "label": "MOT AIN1 GPIO1" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "mot_l2",
+      "top": 400,
+      "left": 160,
+      "attrs": { "color": "yellow", "label": "MOT AIN2 GPIO2" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "mot_r1",
+      "top": 360,
+      "left": 240,
+      "attrs": { "color": "orange", "label": "MOT BIN1 GPIO41" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "mot_r2",
+      "top": 400,
+      "left": 240,
+      "attrs": { "color": "orange", "label": "MOT BIN2 GPIO42" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+
+    [ "esp:3V3", "bb1:bp.1", "red", [ "h0" ] ],
+    [ "esp:GND.1", "bb1:bn.1", "black", [ "h0" ] ],
+
+    [ "esp:3V3", "mpu:VCC", "red", [ "h0" ] ],
+    [ "esp:GND.1", "mpu:GND", "black", [ "h0" ] ],
+    [ "esp:8", "mpu:SDA", "green", [ "h0" ] ],
+    [ "esp:9", "mpu:SCL", "yellow", [ "h0" ] ],
+
+    [ "esp:5V", "ring:VCC", "red", [ "h0" ] ],
+    [ "esp:GND.1", "ring:GND", "black", [ "h0" ] ],
+    [ "esp:38", "ring:DIN", "cyan", [ "h0" ] ],
+
+    [ "esp:15", "btn_cliff_l:1.l", "red", [ "h0" ] ],
+    [ "btn_cliff_l:2.l", "esp:GND.1", "black", [ "h0" ] ],
+    [ "esp:7", "btn_cliff_r:1.l", "red", [ "h0" ] ],
+    [ "btn_cliff_r:2.l", "esp:GND.1", "black", [ "h0" ] ],
+    [ "esp:40", "btn_presence:1.l", "green", [ "h0" ] ],
+    [ "btn_presence:2.l", "esp:GND.1", "black", [ "h0" ] ],
+    [ "esp:47", "btn_user:1.l", "blue", [ "h0" ] ],
+    [ "btn_user:2.l", "esp:GND.1", "black", [ "h0" ] ],
+
+    [ "esp:3V3", "pot_batt:VCC", "red", [ "h0" ] ],
+    [ "esp:GND.1", "pot_batt:GND", "black", [ "h0" ] ],
+    [ "pot_batt:SIG", "esp:10", "purple", [ "h0" ] ],
+
+    [ "esp:1", "mot_l1:A", "yellow", [ "h0" ] ],
+    [ "mot_l1:C", "esp:GND.1", "black", [ "h0" ] ],
+    [ "esp:2", "mot_l2:A", "yellow", [ "h0" ] ],
+    [ "mot_l2:C", "esp:GND.1", "black", [ "h0" ] ],
+    [ "esp:41", "mot_r1:A", "orange", [ "h0" ] ],
+    [ "mot_r1:C", "esp:GND.1", "black", [ "h0" ] ],
+    [ "esp:42", "mot_r2:A", "orange", [ "h0" ] ],
+    [ "mot_r2:C", "esp:GND.1", "black", [ "h0" ] ]
+  ],
+  "dependencies": {}
+}

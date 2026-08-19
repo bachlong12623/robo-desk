@@ -17,6 +17,8 @@ Danh sách đầy đủ: **`BOM.txt`** — 5 khối chính (não, nguồn 2S, ng
 **Bắt đầu đấu dây:**
 - [`docs/WIRING.md`](docs/WIRING.md) — thứ tự lắp, an toàn
 - [`docs/WIRING_PINS.md`](docs/WIRING_PINS.md) — **chân nào cắm cổng nào** (chi tiết từng module)
+- [`tools/wiring_diagram.html`](tools/wiring_diagram.html) — **sơ đồ đồ họa tương tác** (mở trong browser)
+- [`docs/GEMINI_WIRING_PROMPT.md`](docs/GEMINI_WIRING_PROMPT.md) — prompt để AI vẽ poster/sơ đồ
 
 ## Cấu trúc repo
 
@@ -25,6 +27,7 @@ BOM.txt                     # Danh sách linh kiện
 docs/
   WIRING.md                 # ★ Hướng dẫn đấu dây (người mới)
   WIRING_PINS.md            # ★★ Bảng chân từng module ↔ ESP32 (chi tiết cổng IO)
+  GEMINI_WIRING_PROMPT.md   # Prompt AI vẽ sơ đồ poster
   PINMAP.md                 # Bảng chân GPIO
   POWER.md                  # Sơ đồ nguồn 2S
   BRINGUP_CHECKLIST.md      # Checklist test từng bước
@@ -32,7 +35,7 @@ docs/
   FACE_PIXEL.md             # Biểu cảm & màn hình GC9A01
 firmware/esp32/             # Firmware ESP-IDF
 server/pi5/                 # Pi 5: Mosquitto + orchestrator (Linked mode)
-tools/                      # Preview biểu cảm/màn hình trên máy tính
+tools/                      # Preview biểu cảm + sơ đồ đấu dây HTML
 ```
 
 ## Xem biểu cảm (chưa cần lắp phần cứng)
@@ -41,6 +44,9 @@ tools/                      # Preview biểu cảm/màn hình trên máy tính
 python tools/preview_faces.py --html tools/faces.html
 python tools/preview_screens.py --html tools/screens.html
 python tools/preview_faces.py --mood happy
+
+# Sơ đồ đấu dây tương tác (mở file trong Chrome/Edge):
+# tools/wiring_diagram.html
 ```
 
 ## Firmware ESP32-S3

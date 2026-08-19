@@ -13,7 +13,6 @@ docs/
   PROTOCOL.md           # MQTT / WS / BLE
   BRINGUP_CHECKLIST.md  # Phase 0 rồi Phase 1
   FACE_PIXEL.md         # Biểu cảm pixel GC9A01
-  WOKWI.md              # Hàn dây + mô phỏng Wokwi (cùng GPIO board_pins.h)
 firmware/esp32/         # ESP-IDF project
 server/pi5/             # Docker Mosquitto + orchestrator
 ```
@@ -29,14 +28,6 @@ python tools/preview_faces.py --mood happy                # xem nhanh trên term
 ```
 
 Chi tiết: `docs/FACE_PIXEL.md`.
-
-### Mô phỏng Wokwi (trước khi hàn)
-
-```bash
-# Xem hướng dẫn nối dây + import diagram:
-cat docs/WOKWI.md
-# File sẵn: tools/wokwi/diagram.json + tools/wokwi/sketch.ino
-```
 ## Firmware (ESP32-S3)
 
 ```bash

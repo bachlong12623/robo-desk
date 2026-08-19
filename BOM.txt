@@ -1,71 +1,56 @@
-# RoboDesk — Bill of Materials
-# Danh sách linh kiện cuối cùng — robot 2WD (ESP32-S3 Solo-first)
+# RoboDesk — Bill of Materials (chốt)
+# Robot 2WD ESP32-S3 Solo-first. Tất cả mục §1–§5 = ĐANG CÓ.
 
-## 1. Khối Xử lý & Lưu trữ (Bộ não)
+## 1. Khối Xử lý & Lưu trữ
 
-ESP32-S3 Dev Kit N16R8                          x1    [CÓ]
+ESP32-S3 Dev Kit N16R8                          x1
 
-## 2. Khối Năng lượng (Hệ thống Nguồn 2S)
+## 2. Khối Năng lượng (2S)
 
-Pin Lithium 18650 (2000mAh)                     x2    [CÓ]
-Đế pin 18650 đôi (nối tiếp 2S)                  x1    [CÓ]
-Mạch sạc 2S Type-C (BM1 cân bằng, không bảo vệ xả) x1 [CÓ]
-Mạch hạ áp Buck DC-DC MP1584EN                  x1    [CÓ]  # chỉnh 5.0V
-Công tắc gạt (ngắt nguồn chống xả cạn pin)      x1    [CÓ]
+Pin Lithium 18650 (2000mAh)                     x2
+Đế pin 18650 đôi (nối tiếp 2S)                  x1
+Mạch sạc 2S Type-C (BM1 cân bằng, KHÔNG bảo vệ xả) x1
+Mạch hạ áp Buck DC-DC MP1584EN (chỉnh 5.0V)     x1
+Công tắc gạt (ngắt nguồn chống xả cạn)          x1
 
 ## 3. Khối Giao tiếp Nghe/Nhìn
 
-Màn hình LCD tròn 1.28" GC9A01 (SPI)            x1    [CÓ]
-Micro INMP441 (I2S)                             x1    [CÓ]
-Mạch Amply MAX98357A (I2S)                      x1    [CÓ]
-Củ loa 3W                                       x1    [CÓ]
-Vòng đèn LED RGB NeoPixel WS2812                x1    [CÓ]
+Màn hình LCD tròn 1.28" GC9A01 (SPI)            x1
+Micro INMP441 (I2S)                             x1
+Mạch Amply MAX98357A (I2S)                      x1
+Củ loa 3W                                       x1
+Vòng đèn LED RGB NeoPixel WS2812                x1
 
 ## 4. Khối Truyền động & Khung gầm
 
-Động cơ giảm tốc N20 (300 RPM)                  x2    [CÓ]
-Mạch Driver DRV8833                             x1    [CÓ]
-Bánh xe N20                                     x2    [CÓ]
-Gá bắt motor N20                                x2    [CÓ]
-Bánh xe mắt trâu                                x1    [CÓ]
+Động cơ giảm tốc N20 (300 RPM)                  x2
+Mạch Driver DRV8833                             x1
+Bánh xe N20                                     x2
+Gá bắt motor N20                                x2
+Bánh xe mắt trâu                                x1
 
 ## 5. Hệ thống Cảm biến
 
-Cảm biến hồng ngoại TCRT5000                    x2    [CÓ]
-Cảm biến Laser ToF VL53L0X                      x1    [CÓ]
-Cảm biến Radar X-band Rd-04                     x1    [CÓ]
-Cảm biến MPU6050                                x1    [CÓ]
-Cảm biến DHT20                                  x1    [CÓ]
+Cảm biến hồng ngoại TCRT5000                    x2
+Cảm biến Laser ToF VL53L0X                      x1
+Cảm biến Radar X-band Rd-04                     x1
+Cảm biến MPU6050                                x1
+Cảm biến DHT20                                  x1
 
-## B. Phụ tùng lắp ráp — tùy chọn / bổ sung
+## Phụ kiện lắp ráp (khuyến nghị mua thêm)
 
-Cầu chì / polyfuse 2–3A                         x1    [CHƯA CÓ]
-Tụ điện phân cực 470–1000µF / 10V               x2    [CHƯA CÓ]
-Tụ ceramic 100nF                                x10   [CHƯA CÓ]
-Điện trở chia áp 100k + 33k                     x1 bộ [CHƯA CÓ]  # đo 2S → ADC
-Level shifter 1 kênh (hoặc 74AHCT125)           x1    [CHƯA CÓ]  # WS2812 DATA
-LDO/Buck 3.3V 1A (AMS1117-3.3 hoặc MP1584 #2)   x1    [CHƯA CÓ]
-Ốc M2/M3 + trụ nhựa                             x1 bộ [CHƯA CÓ]
-Trục / bạc đạn bánh mắt trâu                    x1 bộ [CHƯA CÓ]
-Testboard (Breadboard 830 lỗ)                   x1    [CHƯA CÓ]
-Bộ dây cắm DuPont (Đực-Cái, Đ-Đ)                x1    [CHƯA CÓ]
+Dây điện đa sắc + đầu cos/cáp JST               x1 bộ
+Mỏ hàn + thiếc + flux                           x1 bộ
+Tụ điện phân cực 470–1000µF / 10V (gần 5V rail)  x2
+Tụ ceramic 100nF (decouple từng module)         x10
+Điện trở chia áp 100kΩ + 33kΩ (đo pin → GPIO10) x1 bộ
+Level shifter 3.3V→5V (WS2812 DATA)             x1
+Cầu chì / polyfuse 2–3A (sau công tắc)          x1
+Ốc M2/M3 + trụ nhựa + keo nóng/zip tie          x1 bộ
 
-## C. Nên có — tùy chọn (mua sau khi B xong)
+## Raspberry Pi 5 — Linked mode (tùy chọn, không bắt buộc)
 
-Schottky / ideal diode (power-path)             x1    [CHƯA CÓ]
-INA219 (I2C current sense)                      x1    [CHƯA CÓ]
-Nút tactile                                     x2    [CHƯA CÓ]
-LED báo nguồn + điện trở 220Ω                   x1    [CHƯA CÓ]
-Dây JST-XH/PH + crimp                           x1 bộ [CHƯA CÓ]
-Bọt cách âm mic                                 x1    [CHƯA CÓ]
-Heatshrink / zip tie / keo nóng                 x1 bộ [CHƯA CÓ]
-
-## D. Raspberry Pi 5 — Linked mode (tùy chọn)
-
-Raspberry Pi 5 (4/8GB)                          x1    [CÓ]
-Nguồn Pi 5 27W                                  x1    [CÓ]
-microSD 64GB (đang dùng)                        x1    [CÓ]
-Case + active cooler                            x1    [CÓ]
-LAN Ethernet hoặc WiFi 24/7                     x1    [CÓ]
-NVMe SSD + HAT (optional)                       x0→1  [CHƯA CÓ / không cần phase 1]
-Pi Camera v3 (optional, phase 2)                x0→1  [CHƯA CÓ / không cần phase 1]
+Raspberry Pi 5 (4/8GB)                          x1
+Nguồn Pi 5 27W                                  x1
+microSD 64GB                                    x1
+Case + active cooler                            x1

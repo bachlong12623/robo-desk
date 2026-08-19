@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* Info screens on GC9A01 driven by BOM section-A sensors.
+/* Info screens on GC9A01 driven by onboard sensors (BOM §5).
  * Rendering mirrors tools/preview_screens.py — keep both in sync. */
 
 typedef enum {

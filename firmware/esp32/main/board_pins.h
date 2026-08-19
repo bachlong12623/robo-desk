@@ -40,7 +40,6 @@
 #define I2C_ADDR_MPU6050      0x68
 #define I2C_ADDR_DHT20        0x38
 #define I2C_ADDR_VL53L0X      0x29
-#define I2C_ADDR_INA219       0x40
 
 #define BAT_DIV_RTOP_OHM      100000.0f
 #define BAT_DIV_RBOT_OHM      33000.0f

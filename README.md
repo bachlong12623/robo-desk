@@ -1,50 +1,62 @@
 # RoboDesk
 
-Desk companion robot: **ESP32-S3 Solo-first** + optional **Raspberry Pi 5 Linked** AI (microSD 64GB).
+Robot bàn làm việc (desk companion): **ESP32-S3** tự chạy (Solo) hoặc kết nối **Raspberry Pi 5** (Linked) để có AI, thời tiết, tin tức.
 
-## Layout
+## Linh kiện (BOM)
+
+Danh sách đầy đủ: **`BOM.txt`** — 5 khối chính (não, nguồn 2S, nghe/nhìn, truyền động, cảm biến).
+
+| Khối | Thành phần chính |
+|---|---|
+| 1. Xử lý | ESP32-S3 DevKit N16R8 |
+| 2. Nguồn | 2×18650 2S, sạc Type-C BM1, MP1584EN 5V, công tắc gạt |
+| 3. Nghe/Nhìn | GC9A01, INMP441, MAX98357A, loa 3W, WS2812 |
+| 4. Truyền động | N20 300RPM ×2, DRV8833, bánh xe + omni |
+| 5. Cảm biến | TCRT5000 ×2, VL53L0X, Rd-04, MPU6050, DHT20 |
+
+**Bắt đầu đấu dây:** đọc [`docs/WIRING.md`](docs/WIRING.md) — hướng dẫn chi tiết cho người mới, có sơ đồ.
+
+## Cấu trúc repo
 
 ```
-BOM.txt                 # A+D đang có; B+C chưa mua
+BOM.txt                     # Danh sách linh kiện
 docs/
-  PINMAP.md             # GPIO map
-  POWER.md              # 2S → 5V/3.3V (+ Phase 0 A-only)
-  WIRING.md             # Breadboard bring-up
-  PROTOCOL.md           # MQTT / WS / BLE
-  BRINGUP_CHECKLIST.md  # Phase 0 rồi Phase 1
-  FACE_PIXEL.md         # Biểu cảm pixel GC9A01
-firmware/esp32/         # ESP-IDF project
-server/pi5/             # Docker Mosquitto + orchestrator
+  WIRING.md                 # ★ Hướng dẫn đấu dây (người mới)
+  PINMAP.md                 # Bảng chân GPIO
+  POWER.md                  # Sơ đồ nguồn 2S
+  BRINGUP_CHECKLIST.md      # Checklist test từng bước
+  PROTOCOL.md               # MQTT / WebSocket / BLE
+  FACE_PIXEL.md             # Biểu cảm & màn hình GC9A01
+firmware/esp32/             # Firmware ESP-IDF
+server/pi5/                 # Pi 5: Mosquitto + orchestrator (Linked mode)
+tools/                      # Preview biểu cảm/màn hình trên máy tính
 ```
 
-**Kho phần cứng:** mục A (robot) + D (Pi 5) = có. Mục B (bảo vệ nguồn/cơ khí) và C (nice-to-have) = chưa có — mua B trước khi full-load / chạy mép bàn.
-
-### Xem biểu cảm (chưa cần ESP/màn)
+## Xem biểu cảm (chưa cần lắp phần cứng)
 
 ```bash
-python tools/preview_faces.py --html tools/faces.html     # 14 biểu cảm, có animation — mở trong browser
-python tools/preview_screens.py --html tools/screens.html # 13 màn hình (cảm biến + weather/AQI/news/calendar/desk/moon)
-python tools/preview_faces.py --mood happy                # xem nhanh trên terminal
+python tools/preview_faces.py --html tools/faces.html
+python tools/preview_screens.py --html tools/screens.html
+python tools/preview_faces.py --mood happy
 ```
 
-Chi tiết: `docs/FACE_PIXEL.md`.
-## Firmware (ESP32-S3)
+## Firmware ESP32-S3
 
 ```bash
 cd firmware/esp32
 idf.py set-target esp32s3
-# Edit WiFi in NVS or app_config.c defaults
 idf.py build flash monitor
 ```
 
-Requires ESP-IDF ≥ 5.1, PSRAM octal (N16R8).
+Yêu cầu: ESP-IDF ≥ 5.1, board N16R8 (PSRAM octal).
 
-Bring-up hardening đã thêm:
-- `DHT20`, `MPU6050`, `VL53L0X` có đường đọc thật mức cơ bản; snapshot local có cờ `valid/stale`
-- `face_ui` dùng command/priority nội bộ để `panic/alert` local thắng remote emote/screen
-- `screen_data` có `version` + `ts`, Pi giữ `last-good` cache cho weather/news/calendar/AQI
+Tính năng firmware:
+- Đọc cảm biến thật (DHT20, MPU6050, VL53L0X) với cờ `valid/stale`
+- Biểu cảm GC9A01 + 13 màn hình thông tin
+- An toàn: cliff TCRT, shock MPU, pin yếu — chặn motor trên ESP
+- Solo ↔ Linked tự chuyển khi mất Pi
 
-## Pi 5 server
+## Pi 5 server (Linked mode — tùy chọn)
 
 ```bash
 cd server/pi5
@@ -52,33 +64,18 @@ docker compose up -d --build
 curl http://localhost:8080/health
 ```
 
-MQTT `:1883`, HTTP `:8080`, audio WS `:8081`.
+- MQTT `:1883`, HTTP `:8080`, audio WS `:8081`
+- Weather, AQI, RSS news, calendar, desk tracker, morning greeting
 
-Linked-mode feed mở rộng:
-- Weather forecast + AQI từ Open-Meteo
-- News từ RSS
-- Calendar từ `server/pi5/orchestrator/data/calendar.json`
-- Desk tracker từ presence telemetry
-- Morning greeting + moon phase
-
-On-device without Docker:
-
-```bash
-cd server/pi5/orchestrator
-python -m venv .venv && source .venv/bin/activate  # or Windows venv
-pip install -r requirements.txt
-MQTT_HOST=127.0.0.1 python -m app.main
-```
-
-Run Mosquitto locally and point ESP `mqtt_uri` to `mqtt://<pi-ip>`.
-
-## Verification
+## Kiểm tra phần mềm
 
 ```bash
 python -m unittest tools.tests.test_previews
 python -m unittest server.pi5.orchestrator.tests.test_main
 ```
 
-## Safety
+## An toàn
 
-All motion commands are gated on the ESP (cliff TCRT, tip/shock MPU, battery critical). Losing Pi falls back to **Solo** automatically.
+- Mạch sạc **không bảo vệ xả** → luôn dùng công tắc gạt, không để pin cạn
+- Motor chỉ test duty thấp khi chưa hoàn thiện khung
+- Mất Pi → robot tự về chế độ **Solo**

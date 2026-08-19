@@ -1,31 +1,63 @@
-# Hardware bring-up log (fill during lab)
+# Checklist bring-up phần cứng
 
-**Kho hiện tại: chỉ A + D.** B/C chưa mua → làm **Phase 0** trước (xem `POWER.md`).
+In ra và tick từng ô khi test trong phòng lab.
 
-## Phase 0 — A only
+**Trước khi bắt đầu:** đọc `docs/WIRING.md` (hướng dẫn đấu dây) và `docs/POWER.md` (nguồn).
 
-| Step | Expected | Measured | OK |
+## Giai đoạn 1 — Nguồn & ESP
+
+| Bước | Kỳ vọng | Đo / quan sát | OK |
 |---|---|---|---|
-| MP1584 no-load 5.00V | 5.00±0.05 | | |
-| ESP+WiFi idle @5V | boot OK | | |
-| I2C scan 0x68/0x38/0x29 (3V3 DevKit) | 3 addr | | |
-| GC9A01 backlight | on | | |
-| WS2812 dim (no level shift) | 1–few LEDs | | |
-| Mic/amp beep | audible | | |
-| Motor L then R (wheels free, low duty) | spin | | |
-| TCRT DO change over edge (hand test) | toggle | | |
-| Rd-04 presence | toggle | | |
-| Pi5 `docker compose` /health | ok | | |
+| Pin 2S đầy | 7.0–8.4 V ở PACK | | ☐ |
+| Công tắc OFF = mất nguồn tải | 0 V sau switch | | ☐ |
+| Buck no-load | 5.00 ± 0.05 V | | ☐ |
+| ESP boot qua VIN | Serial log "RoboDesk boot" | | ☐ |
+| ESP 3V3 pin | ~3.3 V | | ☐ |
 
-## Phase 1 — sau khi có B
+## Giai đoạn 2 — Màn hình & I2C
 
-| Step | Expected | Measured | OK |
+| Bước | Kỳ vọng | Đo / quan sát | OK |
 |---|---|---|---|
-| Switch + fuse in path | | | |
-| 3.3V rail riêng | 3.30±0.05 | | |
-| Tụ 5V gần LED/DRV | | | |
-| Level shift WS2812 full ring | | | |
-| Divider @8.4V → GPIO10 | ~2.08V | | |
-| Motors+LED cùng lúc, 5V sag | <100mV | | |
-| Cliff drive trên bàn (có safety) | | | |
+| GC9A01 backlight | Sáng | | ☐ |
+| Face smoke test | Hiện biểu cảm | | ☐ |
+| I2C 0x68 | MPU6050 | | ☐ |
+| I2C 0x38 | DHT20 | | ☐ |
+| I2C 0x29 | VL53L0X | | ☐ |
 
+## Giai đoạn 3 — LED, âm thanh, motor
+
+| Bước | Kỳ vọng | Đo / quan sát | OK |
+|---|---|---|---|
+| WS2812 ring | Đổi màu, độ sáng thấp trước | | ☐ |
+| Mic + amp beep | Nghe thấy tiếng | | ☐ |
+| Motor trái (bánh tháo) | Quay duty thấp | | ☐ |
+| Motor phải (bánh tháo) | Quay duty thấp | | ☐ |
+| 5V không sụt khi motor | < 0.2 V sag | | ☐ |
+
+## Giai đoạn 4 — An toàn & cảm biến
+
+| Bước | Kỳ vọng | Đo / quan sát | OK |
+|---|---|---|---|
+| TCRT trái (GPIO15) | Đổi mức ở mép bàn | | ☐ |
+| TCRT phải (GPIO7) | Đổi mức ở mép bàn | | ☐ |
+| Rd-04 (GPIO40) | Đổi khi có người | | ☐ |
+| Chia áp GPIO10 | ~2.0 V khi pin đầy | | ☐ |
+| Cliff → motor dừng | Firmware safety | | ☐ |
+
+## Giai đoạn 5 — Tích hợp (tuỳ chọn Pi 5)
+
+| Bước | Kỳ vọng | Đo / quan sát | OK |
+|---|---|---|---|
+| Pi `docker compose up` | Container running | | ☐ |
+| `curl localhost:8080/health` | `{"ok":true}` | | ☐ |
+| ESP Linked mode | MQTT heartbeat OK | | ☐ |
+| Mất Pi → Solo | ESP tự fallback | | ☐ |
+
+## Ghi chú lab
+
+```
+Ngày:
+Điện áp buck đo được:
+Firmware version / commit:
+Vấn đề gặp phải:
+```

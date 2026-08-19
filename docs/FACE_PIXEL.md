@@ -56,7 +56,7 @@ Nếu màu trên màn thật bị đảo, chỉnh `esp_lcd_panel_invert_color` /
 
 # Info screens (màn hình thông tin)
 
-Ngoài khuôn mặt, màn GC9A01 hiện có **13** màn hình. Trong đó 6 màn local lấy từ cảm biến mục A,
+Ngoài khuôn mặt, màn GC9A01 hiện có **13** màn hình. Trong đó 6 màn local lấy từ cảm biến onboard (BOM §5),
 và 7 màn nội dung linked-mode lấy từ Pi 5 qua MQTT:
 
 | Screen | Cảm biến | Nội dung |

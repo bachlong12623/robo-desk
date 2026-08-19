@@ -1,33 +1,44 @@
 # RoboDesk — Bill of Materials
-# Trạng thái kho: A + D ĐANG CÓ (số lượng đã đủ). B + C = CHƯA CÓ (cần mua).
+# Danh sách linh kiện cuối cùng — robot 2WD (ESP32-S3 Solo-first)
 
-## A. Robot — ĐANG CÓ (qty đã xác nhận đủ cho 2WD)
+## 1. Khối Xử lý & Lưu trữ (Bộ não)
 
 ESP32-S3 Dev Kit N16R8                          x1    [CÓ]
+
+## 2. Khối Năng lượng (Hệ thống Nguồn 2S)
+
 Pin Lithium 18650 (2000mAh)                     x2    [CÓ]
-Đế pin 18650 đôi (2 Slot)                       x1    [CÓ]
-Mạch sạc Type-C 2S/3S (balance + bảo vệ)        x1    [CÓ]  # cấu hình 2S
-MP1584EN buck DC 3A (0.8–20V)                   x1    [CÓ]  # chỉnh 5.0V
-Micro kỹ thuật số INMP441 (I2S)                 x1    [CÓ]
+Đế pin 18650 đôi (nối tiếp 2S)                  x1    [CÓ]
+Mạch sạc 2S Type-C (BM1 cân bằng, không bảo vệ xả) x1 [CÓ]
+Mạch hạ áp Buck DC-DC MP1584EN                  x1    [CÓ]  # chỉnh 5.0V
+Công tắc gạt (ngắt nguồn chống xả cạn pin)      x1    [CÓ]
+
+## 3. Khối Giao tiếp Nghe/Nhìn
+
+Màn hình LCD tròn 1.28" GC9A01 (SPI)            x1    [CÓ]
+Micro INMP441 (I2S)                             x1    [CÓ]
 Mạch Amply MAX98357A (I2S)                      x1    [CÓ]
-Củ Loa 3W (khuyến nghị 4Ω)                      x1    [CÓ]
-Vòng đèn LED WS2812 (12 bóng)                   x1    [CÓ]
-Màn hình tròn 1.28" GC9A01 (SPI)                x1    [CÓ]
-Động cơ giảm tốc N20 (100–150 vòng/p)           x2    [CÓ]
-Mạch điều khiển Motor DRV8833                   x1    [CÓ]
-Bánh xe N20 + Gá bắt Motor                      x2    [CÓ]
-Bánh xe mắt trâu (đa hướng)                     x1    [CÓ]
-Cảm biến khoảng cách Laser VL53L0X              x1    [CÓ]
-Cảm biến Radar X-band Rd-04                     x1    [CÓ]
-Cảm biến góc nghiêng MPU6050                    x1    [CÓ]
-Cảm biến Nhiệt độ/Độ ẩm DHT20                   x1    [CÓ]
+Củ loa 3W                                       x1    [CÓ]
+Vòng đèn LED RGB NeoPixel WS2812                x1    [CÓ]
+
+## 4. Khối Truyền động & Khung gầm
+
+Động cơ giảm tốc N20 (300 RPM)                  x2    [CÓ]
+Mạch Driver DRV8833                             x1    [CÓ]
+Bánh xe N20                                     x2    [CÓ]
+Gá bắt motor N20                                x2    [CÓ]
+Bánh xe mắt trâu                                x1    [CÓ]
+
+## 5. Hệ thống Cảm biến
+
 Cảm biến hồng ngoại TCRT5000                    x2    [CÓ]
-Testboard (Breadboard 830 lỗ)                   x1    [CÓ]
-Bộ dây cắm DuPont (Đực-Cái, Đ-Đ)                x1    [CÓ]
+Cảm biến Laser ToF VL53L0X                      x1    [CÓ]
+Cảm biến Radar X-band Rd-04                     x1    [CÓ]
+Cảm biến MPU6050                                x1    [CÓ]
+Cảm biến DHT20                                  x1    [CÓ]
 
-## B. Bắt buộc bổ sung — CHƯA CÓ (ưu tiên mua)
+## B. Phụ tùng lắp ráp — tùy chọn / bổ sung
 
-Công tắc nguồn chính                            x1    [CHƯA CÓ]
 Cầu chì / polyfuse 2–3A                         x1    [CHƯA CÓ]
 Tụ điện phân cực 470–1000µF / 10V               x2    [CHƯA CÓ]
 Tụ ceramic 100nF                                x10   [CHƯA CÓ]
@@ -36,8 +47,10 @@ Level shifter 1 kênh (hoặc 74AHCT125)           x1    [CHƯA CÓ]  # WS2812 D
 LDO/Buck 3.3V 1A (AMS1117-3.3 hoặc MP1584 #2)   x1    [CHƯA CÓ]
 Ốc M2/M3 + trụ nhựa                             x1 bộ [CHƯA CÓ]
 Trục / bạc đạn bánh mắt trâu                    x1 bộ [CHƯA CÓ]
+Testboard (Breadboard 830 lỗ)                   x1    [CHƯA CÓ]
+Bộ dây cắm DuPont (Đực-Cái, Đ-Đ)                x1    [CHƯA CÓ]
 
-## C. Nên có — CHƯA CÓ (mua sau khi B xong)
+## C. Nên có — tùy chọn (mua sau khi B xong)
 
 Schottky / ideal diode (power-path)             x1    [CHƯA CÓ]
 INA219 (I2C current sense)                      x1    [CHƯA CÓ]
@@ -47,7 +60,7 @@ Dây JST-XH/PH + crimp                           x1 bộ [CHƯA CÓ]
 Bọt cách âm mic                                 x1    [CHƯA CÓ]
 Heatshrink / zip tie / keo nóng                 x1 bộ [CHƯA CÓ]
 
-## D. Raspberry Pi 5 — ĐANG CÓ
+## D. Raspberry Pi 5 — Linked mode (tùy chọn)
 
 Raspberry Pi 5 (4/8GB)                          x1    [CÓ]
 Nguồn Pi 5 27W                                  x1    [CÓ]
